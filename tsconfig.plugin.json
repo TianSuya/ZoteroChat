@@ -29,6 +29,7 @@
     "src/panel-app/bridge.ts",
     "typings/plugin.d.ts",
     "zotero-plugin.config.ts",
-    "package.json"
+    "package.json",
+    "src/dev/checkSizing.ts"
   ]
 }

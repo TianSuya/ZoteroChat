@@ -17,31 +17,46 @@ function findSection(el: HTMLElement): HTMLElement | null {
 }
 
 /**
- * Distance from the top of the pane's scrollable content to `el`.
+ * Distance from `el` to the top of the pane's *visible* area.
  *
- * Deliberately scroll-invariant: adding `scrollTop` back cancels out the
- * scroll offset baked into the client rects, so scrolling the pane does not
- * change the result and cannot make the panel resize under the user.
+ * This is what decides how much room is left below us, and it changes as the
+ * pane scrolls — clicking our sidenav icon makes Zotero scroll the section to
+ * the top, at which point this is 0 and the panel should fill the pane.
  */
-function offsetWithinContent(el: HTMLElement, viewport: HTMLElement): number {
-  return (
-    el.getBoundingClientRect().top -
-    viewport.getBoundingClientRect().top +
-    viewport.scrollTop
-  );
+function visibleTop(el: HTMLElement, viewport: HTMLElement): number {
+  return el.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
 }
 
 /**
- * Sizes the panel to fill the rest of the item pane.
+ * Distance from the top of the pane's scrollable *content* to `el`.
+ *
+ * Scroll-invariant: adding `scrollTop` back cancels the scroll offset baked
+ * into the client rects. Used only as a floor — see `fit`.
+ */
+function contentTop(el: HTMLElement, viewport: HTMLElement): number {
+  return visibleTop(el, viewport) + viewport.scrollTop;
+}
+
+/**
+ * Sizes the panel so its bottom edge meets the bottom of the item pane.
  *
  * Item pane sections are laid out from their content, so a percentage height
- * collapses to zero — the panel has to be given a pixel height. Sizing it to
- * the *whole* viewport is wrong too: the sections above ours push it down, so
- * it would overflow and take the composer off-screen. What "as tall as the
- * sidebar" actually means is: end where the pane ends.
+ * collapses to zero — the panel has to be given a pixel height. Which height
+ * depends on where the section currently sits:
  *
- * When the sections above leave less than `MIN_HEIGHT`, the panel stops
- * shrinking and the pane scrolls instead.
+ *  - At rest it is pushed down by the sections above, so it fills what is left.
+ *  - Clicking our sidenav icon makes Zotero scroll it to the top of the pane,
+ *    and then it should fill the whole pane.
+ *
+ * Both are "bottom edge meets the pane's bottom edge", which means measuring
+ * the *visible* offset rather than the offset within the scrolled content.
+ *
+ * The floor is what keeps that stable. Shrinking the panel shrinks the pane's
+ * content, which can make the browser clamp `scrollTop` down, which increases
+ * our visible offset, which shrinks the panel again — a spiral straight to
+ * `MIN_HEIGHT`. Since `scrollTop >= 0`, the visible offset is never larger
+ * than the content offset, so the scroll-invariant "at rest" height is always
+ * a valid lower bound, and it is exactly the right answer when unscrolled.
  */
 export function fitToItemPane(wrapper: HTMLElement): { dispose: () => void } {
   const win = wrapper.ownerDocument?.defaultView;
@@ -56,7 +71,7 @@ export function fitToItemPane(wrapper: HTMLElement): { dispose: () => void } {
   let applied = 0;
 
   const fit = () => {
-    const top = offsetWithinContent(section ?? wrapper, viewport);
+    const target = section ?? wrapper;
     // `offsetHeight` is undefined on XUL elements, and the section is one —
     // reading it yields NaN, which then poisons every later comparison
     // (NaN !== NaN, so the "did anything change" guard never holds and the
@@ -68,7 +83,11 @@ export function fitToItemPane(wrapper: HTMLElement): { dispose: () => void } {
             wrapper.getBoundingClientRect().height,
         )
       : 0;
-    const available = viewport.clientHeight - top - chrome - BOTTOM_GUTTER;
+    const room = (offset: number) =>
+      viewport.clientHeight - Math.max(0, offset) - chrome - BOTTOM_GUTTER;
+
+    const atRest = room(contentTop(target, viewport));
+    const available = Math.max(room(visibleTop(target, viewport)), atRest);
     if (!Number.isFinite(available)) return;
 
     const next = Math.max(MIN_HEIGHT, Math.round(available));
@@ -86,6 +105,19 @@ export function fitToItemPane(wrapper: HTMLElement): { dispose: () => void } {
   const resizeObserver = new (win as any).ResizeObserver(fit);
   resizeObserver.observe(viewport);
   if (section) resizeObserver.observe(section);
+
+  // Scrolling changes how much of the pane is below us — most visibly when
+  // Zotero scrolls this section to the top in response to its sidenav button.
+  let scrollPending = false;
+  const onScroll = () => {
+    if (scrollPending) return;
+    scrollPending = true;
+    win.requestAnimationFrame(() => {
+      scrollPending = false;
+      fit();
+    });
+  };
+  viewport.addEventListener("scroll", onScroll, { passive: true });
 
   // Sibling sections collapsing or expanding moves us up and down, and that
   // shows up as attribute changes rather than a resize of anything we observe.
@@ -107,6 +139,7 @@ export function fitToItemPane(wrapper: HTMLElement): { dispose: () => void } {
 
   return {
     dispose: () => {
+      viewport.removeEventListener("scroll", onScroll);
       resizeObserver.disconnect();
       mutationObserver.disconnect();
     },

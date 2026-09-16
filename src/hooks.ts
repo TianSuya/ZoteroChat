@@ -1,3 +1,4 @@
+import { checkSizing } from "./dev/checkSizing";
 import { seedDevLibrary } from "./dev/seed";
 import { registerPanelSection, unregisterPanelSection } from "./panel/register";
 
@@ -14,6 +15,7 @@ async function onStartup() {
   ztoolkit.log("startup complete");
 
   await seedDevLibrary();
+  await checkSizing();
 }
 
 async function onMainWindowLoad(_win: Window) {
