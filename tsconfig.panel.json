@@ -3,9 +3,17 @@
   "extends": "zotero-types/entries/xhtml/",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] },
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -20,9 +28,9 @@
     "src/panel-app/**/*.tsx",
     "src/ui/**/*.tsx",
     "src/ui/**/*.ts",
-    "src/dev/radixProbe.tsx",
     "src/utils/report.ts",
     "typings/panel.d.ts",
-    "typings/virtual.d.ts"
+    "typings/virtual.d.ts",
+    "src/dev/*.tsx"
   ]
 }

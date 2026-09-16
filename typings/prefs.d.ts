@@ -15,6 +15,7 @@ declare namespace _ZoteroTypes {
       "debugDumpPayload": boolean;
       "devSeedPDF": string;
       "devShowRadixProbe": boolean;
+      "devShowAssistantProbe": boolean;
     };
   }
 }

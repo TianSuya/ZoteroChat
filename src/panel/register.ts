@@ -83,6 +83,9 @@ export function registerPanelSection() {
         showProbe: Boolean(
           Zotero.Prefs.get(`${config.prefsPrefix}.devShowRadixProbe`, true),
         ),
+        showAssistantProbe: Boolean(
+          Zotero.Prefs.get(`${config.prefsPrefix}.devShowAssistantProbe`, true),
+        ),
       });
 
       frames.set(el, frame);

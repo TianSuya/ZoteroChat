@@ -11,3 +11,5 @@ pref("__prefsPrefix__.devSeedPDF", "");
 
 // Dev-only: render the Radix-in-iframe probe inside the panel.
 pref("__prefsPrefix__.devShowRadixProbe", false);
+// Dev-only: render the assistant-ui runtime probe inside the panel.
+pref("__prefsPrefix__.devShowAssistantProbe", false);

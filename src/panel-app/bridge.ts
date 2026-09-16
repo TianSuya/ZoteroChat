@@ -15,6 +15,8 @@ export interface PanelBridge {
   /** Opt-in Radix-in-iframe probe. Off by default: it opens every floating
    *  layer at once, which is useful as a check and unusable as a UI. */
   showProbe: boolean;
+  /** Opt-in assistant-ui runtime probe. */
+  showAssistantProbe: boolean;
   /** Design tokens copied from the host window, plus the resolved theme. */
   theme: {
     mode: "light" | "dark";

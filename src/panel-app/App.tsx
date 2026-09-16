@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { AssistantProbe } from "../dev/assistantProbe";
 import { RadixProbe } from "../dev/radixProbe";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
 import { Thread } from "../ui/Thread";
@@ -22,6 +23,7 @@ export function App({ bridge }: { bridge: PanelBridge }) {
     <ErrorBoundary label="panel">
       <Thread paperTitle={bridge.paperTitle}>
         {bridge.showProbe ? <RadixProbe /> : null}
+        {bridge.showAssistantProbe ? <AssistantProbe /> : null}
       </Thread>
     </ErrorBoundary>
   );
