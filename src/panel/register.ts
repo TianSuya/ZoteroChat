@@ -80,6 +80,9 @@ export function registerPanelSection() {
         itemID: item.id,
         paperTitle: item.getField("title") || String(item.id),
         env: __env__,
+        showProbe: Boolean(
+          Zotero.Prefs.get(`${config.prefsPrefix}.devShowRadixProbe`, true),
+        ),
       });
 
       frames.set(el, frame);

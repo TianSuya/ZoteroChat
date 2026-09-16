@@ -21,7 +21,7 @@ export function App({ bridge }: { bridge: PanelBridge }) {
   return (
     <ErrorBoundary label="panel">
       <Thread paperTitle={bridge.paperTitle}>
-        {bridge.env === "development" ? <RadixProbe /> : null}
+        {bridge.showProbe ? <RadixProbe /> : null}
       </Thread>
     </ErrorBoundary>
   );

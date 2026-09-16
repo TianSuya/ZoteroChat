@@ -12,6 +12,9 @@ export interface PanelBridge {
   paperTitle: string;
   /** Build mode, so the app can gate dev-only fixtures. */
   env: "development" | "production";
+  /** Opt-in Radix-in-iframe probe. Off by default: it opens every floating
+   *  layer at once, which is useful as a check and unusable as a UI. */
+  showProbe: boolean;
   /** Design tokens copied from the host window, plus the resolved theme. */
   theme: {
     mode: "light" | "dark";
