@@ -11,3 +11,4 @@ dist/
 .vscode/
 .idea/
 fixtures/
+*.tsbuildinfo
