@@ -1,21 +1,7 @@
 {
-  "extends": "zotero-types/entries/sandbox/",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "moduleResolution": "bundler",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
-  },
-  "include": ["src", "typings", "zotero-plugin.config.ts"],
-  "exclude": ["node_modules", "build", "addon", ".scaffold"]
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.plugin.json" },
+    { "path": "./tsconfig.panel.json" }
+  ]
 }

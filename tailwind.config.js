@@ -3,7 +3,9 @@ export default {
   // Shadow DOM isolates us completely, so preflight is safe to keep on
   // and no prefix/important scoping is needed.
   content: ["./src/**/*.{ts,tsx}"],
-  darkMode: ["class", '[data-zc-theme="dark"]'],
+  // The flag sits on `.zc-root` / `.zc-portal`, inside the shadow tree —
+  // Tailwind's variant needs an ancestor it can actually match.
+  darkMode: ["selector", '[data-zc-theme="dark"]'],
   theme: {
     extend: {
       // Notion-ish restraint: small radii, tight scale.
@@ -22,6 +24,7 @@ export default {
         surface: "var(--zc-surface)",
         "surface-subtle": "var(--zc-surface-subtle)",
         "surface-hover": "var(--zc-surface-hover)",
+        "surface-raised": "var(--zc-surface-raised)",
         border: "var(--zc-border)",
         fg: "var(--zc-fg)",
         "fg-muted": "var(--zc-fg-muted)",

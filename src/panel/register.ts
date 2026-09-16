@@ -1,9 +1,10 @@
 import { config } from "../../package.json";
+import { createPanelFrame, type PanelFrame } from "./frame";
 
 const PANE_ID = `${config.addonRef}-chat`;
 const FTL_NAME = `${config.addonRef}-panel.ftl`;
 
-/** Fluent message IDs are namespaced by the build, mirror that here. */
+/** Fluent message IDs are namespaced by the build; mirror that here. */
 function localeID(id: string) {
   return `${config.addonRef}-${id}`;
 }
@@ -30,6 +31,16 @@ function ensureFTL(doc: Document) {
   }
 }
 
+/**
+ * Live frames, keyed by the section body they live in.
+ *
+ * Frames are deliberately never moved: reparenting an iframe reloads its
+ * document, which would drop React state mid-stream. Zotero hands us a fresh
+ * body per item pane instance, so one frame per body is the natural grain —
+ * anything worth surviving a reload belongs in the store, not in the DOM.
+ */
+const frames = new WeakMap<HTMLElement, PanelFrame>();
+
 export function registerPanelSection() {
   const sectionID = Zotero.ItemPaneManager.registerSection({
     paneID: PANE_ID,
@@ -49,13 +60,11 @@ export function registerPanelSection() {
 
     onInit: ({ doc, body, item, tabType, setEnabled }) => {
       ensureFTL(doc);
-      (body as HTMLElement).dataset.tabType = String(tabType);
       setEnabled(isSupported(item, tabType));
     },
 
-    onItemChange: ({ body, item, tabType, setEnabled }) => {
+    onItemChange: ({ item, tabType, setEnabled }) => {
       const enabled = isSupported(item, tabType);
-      (body as HTMLElement).dataset.tabType = String(tabType);
       setEnabled(enabled);
       return enabled;
     },
@@ -63,15 +72,24 @@ export function registerPanelSection() {
     onRender: ({ body, item, tabType }) => {
       if (!isSupported(item, tabType)) return;
 
-      // M0 placeholder. The shadow root + React mount replaces this next.
       const el = body as HTMLElement;
-      if (el.dataset.zcMounted === "1") return;
-      el.dataset.zcMounted = "1";
-      el.textContent = `ZoteroChat ready — ${item.getField("title") || item.id}`;
+      const doc = el.ownerDocument;
+      if (!doc || frames.has(el)) return;
+
+      const frame = createPanelFrame(doc, {
+        itemID: item.id,
+        paperTitle: item.getField("title") || String(item.id),
+        env: __env__,
+      });
+
+      frames.set(el, frame);
+      el.replaceChildren(frame.element);
     },
 
     onDestroy: ({ body }) => {
-      delete (body as HTMLElement).dataset.zcMounted;
+      const el = body as HTMLElement;
+      frames.get(el)?.destroy();
+      frames.delete(el);
     },
   } as Parameters<typeof Zotero.ItemPaneManager.registerSection>[0]);
 

@@ -5,11 +5,15 @@ import { config } from "../package.json";
 
 const basicTool = new BasicTool();
 
-const ZoteroGlobal = basicTool.getGlobal("Zotero") as unknown as Record<string, unknown>;
+const ZoteroGlobal = basicTool.getGlobal("Zotero") as unknown as Record<
+  string,
+  unknown
+>;
 
 if (!ZoteroGlobal[config.addonInstance]) {
   _globalThis.addon = new Addon();
   defineGlobal("ztoolkit", () => _globalThis.addon.data.ztoolkit);
+
   ZoteroGlobal[config.addonInstance] = addon;
 }
 

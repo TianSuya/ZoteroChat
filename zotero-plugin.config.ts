@@ -50,6 +50,11 @@ function tailwindAsString(): Plugin {
 
 const isProd = process.env.NODE_ENV === "production";
 
+const sharedDefine = {
+  "process.env.NODE_ENV": isProd ? '"production"' : '"development"',
+  __env__: `"${process.env.NODE_ENV ?? "development"}"`,
+};
+
 export default defineConfig({
   source: ["src", "addon"],
   dist: ".scaffold/build",
@@ -76,6 +81,7 @@ export default defineConfig({
       prefix: pkg.config.prefsPrefix,
     },
     esbuildOptions: [
+      // Plugin side: runs in the bootstrap sandbox. No React, no DOM.
       {
         entryPoints: ["src/index.ts"],
         bundle: true,
@@ -83,15 +89,24 @@ export default defineConfig({
         // floor so one bundle serves all three.
         target: "firefox115",
         format: "iife",
-        jsx: "automatic",
-        plugins: [tailwindAsString()],
-        define: {
-          "process.env.NODE_ENV": isProd ? '"production"' : '"development"',
-          __env__: `"${process.env.NODE_ENV ?? "development"}"`,
-        },
+        define: sharedDefine,
         minify: isProd,
         sourcemap: isProd ? false : "inline",
         outfile: `.scaffold/build/addon/content/scripts/${pkg.config.addonRef}.js`,
+      },
+      // Panel side: runs in panel.xhtml inside the item pane iframe, which is
+      // a real HTML document — the reason React and Radix work at all here.
+      {
+        entryPoints: ["src/panel-app/index.tsx"],
+        bundle: true,
+        target: "firefox115",
+        format: "iife",
+        jsx: "automatic",
+        plugins: [tailwindAsString()],
+        define: sharedDefine,
+        minify: isProd,
+        sourcemap: isProd ? false : "inline",
+        outfile: ".scaffold/build/addon/content/scripts/panel.js",
       },
     ],
   },
@@ -102,7 +117,9 @@ export default defineConfig({
     startArgs: [],
     prefs: {
       // Seeds the throwaway dev library so the reader has something to open.
-      [`${pkg.config.prefsPrefix}.devSeedPDF`]: resolve("fixtures/attention.pdf"),
+      [`${pkg.config.prefsPrefix}.devSeedPDF`]: resolve(
+        "fixtures/attention.pdf",
+      ),
     },
   },
 

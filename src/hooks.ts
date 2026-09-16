@@ -21,7 +21,7 @@ async function onMainWindowLoad(_win: Window) {
 }
 
 async function onMainWindowUnload(_win: Window) {
-  // Window-scoped teardown lands here once the panel mounts React roots.
+  // Frames are torn down by the section's own `onDestroy`.
 }
 
 function onShutdown() {

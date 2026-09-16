@@ -3,68 +3,124 @@
 @tailwind utilities;
 
 /*
- * Design tokens.
+ * The panel renders inside a shadow root, so this stylesheet is fully isolated
+ * from Zotero and vice versa. Two consequences shape what follows:
  *
- * Every token maps onto a Zotero CSS variable with a hardcoded fallback.
- * Custom properties inherit through the shadow boundary, so referencing
- * Zotero's variables from inside our shadow root is all that "follow the
- * host theme" requires — there is no bridging code anywhere.
- *
- * Zotero's variable names are not a documented API; verify them against a
- * running client before trusting any single one. The fallbacks are what keep
- * the panel legible if a name moves.
+ * 1. Preflight is safe to leave on — it cannot leak out.
+ * 2. `:host-context()` is unavailable (Firefox never implemented it), and
+ *    Tailwind's `dark:` variant needs its selector on an ancestor *inside* the
+ *    shadow tree. So the theme flag lives on `.zc-root`, not on the host.
  */
-@layer base {
-  :host {
-    /* Reset the inherited properties that cross the shadow boundary. */
-    all: initial;
-    display: block;
-    height: 100%;
 
-    --zc-surface: var(--material-sidepane, #ffffff);
-    --zc-surface-subtle: var(--material-mix-quarternary, #f7f7f5);
-    --zc-surface-hover: var(--fill-quinary, #efefed);
-    --zc-border: var(--material-border-quinary, #e9e9e7);
-    --zc-fg: var(--fill-primary, #37352f);
-    --zc-fg-muted: var(--fill-secondary, #6f6e69);
-    --zc-fg-faint: var(--fill-tertiary, #9b9a97);
-    --zc-accent: var(--color-accent, #2383e2);
-    --zc-accent-fg: #ffffff;
-    --zc-danger: var(--color-red, #e03e3e);
-
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif,
-      system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--zc-fg);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* Zotero flips this attribute on the root element in dark mode. */
-  :host-context([data-zc-theme="dark"]) {
-    --zc-surface: var(--material-sidepane, #202020);
-    --zc-surface-subtle: var(--material-mix-quarternary, #2a2a2a);
-    --zc-surface-hover: var(--fill-quinary, #333333);
-    --zc-border: var(--material-border-quinary, #373737);
-    --zc-fg: var(--fill-primary, #e6e6e4);
-    --zc-fg-muted: var(--fill-secondary, #9b9a97);
-    --zc-fg-faint: var(--fill-tertiary, #6f6e69);
-  }
-
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
+/*
+   * Inherited properties still cross the shadow boundary, so reset the ones
+   * Zotero sets. Avoid `all: initial` — it would also drop the host's own
+   * layout participation in the item pane.
+   */
+:host {
+  display: block;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif,
+    system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: start;
+  text-transform: none;
+  white-space: normal;
+  word-spacing: normal;
 }
 
-@layer components {
-  /* Notion's hover-reveal: actions stay out of the way until you reach for them. */
-  .zc-reveal {
-    @apply opacity-0 transition-opacity;
-  }
-  .group:hover .zc-reveal,
-  .zc-reveal:focus-within {
-    @apply opacity-100;
-  }
+/*
+   * Design tokens.
+   *
+   * Each maps onto a Zotero CSS variable with a hardcoded fallback. Custom
+   * properties inherit through the shadow boundary, so referencing Zotero's
+   * variables from in here is all that "follow the host theme" requires —
+   * there is no bridging code anywhere.
+   *
+   * Zotero's variable names are not a documented API. The fallbacks are what
+   * keep the panel legible if one of them moves.
+   */
+.zc-root {
+  --zc-surface: var(--material-sidepane, #ffffff);
+  --zc-surface-subtle: var(--material-mix-quarternary, #f7f7f5);
+  --zc-surface-hover: var(--fill-quinary, #efefed);
+  /* Floating layers sit *on* the pane, so they need their own, lighter
+     ground — matching --zc-surface would make every menu look transparent. */
+  --zc-surface-raised: #ffffff;
+  --zc-border: var(--fill-quinary, #e9e9e7);
+  --zc-fg: var(--fill-primary, #37352f);
+  --zc-fg-muted: var(--fill-secondary, #6f6e69);
+  --zc-fg-faint: var(--fill-tertiary, #9b9a97);
+  --zc-accent: var(--color-accent, #2383e2);
+  --zc-accent-fg: #ffffff;
+  --zc-danger: var(--color-red, #e03e3e);
+
+  color: var(--zc-fg);
+  background-color: var(--zc-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+.zc-root[data-zc-theme="dark"] {
+  --zc-surface: var(--material-sidepane, #202020);
+  --zc-surface-subtle: var(--material-mix-quarternary, #2a2a2a);
+  --zc-surface-hover: var(--fill-quinary, #333333);
+  --zc-surface-raised: #2b2b2b;
+  --zc-border: var(--fill-quinary, #373737);
+  --zc-fg: var(--fill-primary, #e6e6e4);
+  --zc-fg-muted: var(--fill-secondary, #9b9a97);
+  --zc-fg-faint: var(--fill-tertiary, #6f6e69);
+  --zc-accent-fg: #ffffff;
+}
+
+/* Radix portals render here, outside `.zc-root`, so tokens need a second home. */
+.zc-portal {
+  --zc-surface: var(--material-sidepane, #ffffff);
+  --zc-surface-subtle: var(--material-mix-quarternary, #f7f7f5);
+  --zc-surface-hover: var(--fill-quinary, #efefed);
+  /* Floating layers sit *on* the pane, so they need their own, lighter
+     ground — matching --zc-surface would make every menu look transparent. */
+  --zc-surface-raised: #ffffff;
+  --zc-border: var(--fill-quinary, #e9e9e7);
+  --zc-fg: var(--fill-primary, #37352f);
+  --zc-fg-muted: var(--fill-secondary, #6f6e69);
+  --zc-fg-faint: var(--fill-tertiary, #9b9a97);
+  --zc-accent: var(--color-accent, #2383e2);
+  --zc-accent-fg: #ffffff;
+  --zc-danger: var(--color-red, #e03e3e);
+
+  color: var(--zc-fg);
+}
+
+.zc-portal[data-zc-theme="dark"] {
+  --zc-surface: var(--material-sidepane, #202020);
+  --zc-surface-subtle: var(--material-mix-quarternary, #2a2a2a);
+  --zc-surface-hover: var(--fill-quinary, #333333);
+  --zc-surface-raised: #2b2b2b;
+  --zc-border: var(--fill-quinary, #373737);
+  --zc-fg: var(--fill-primary, #e6e6e4);
+  --zc-fg-muted: var(--fill-secondary, #9b9a97);
+  --zc-fg-faint: var(--fill-tertiary, #6f6e69);
+}
+
+/* Notion keeps scrollbars nearly invisible until you are in the content. */
+.zc-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.zc-scroll:hover {
+scrollbar-color: var(--zc-fg-faint) transparent;
+}
+
+/* Notion's hover-reveal: actions stay out of the way until you reach for them. */
+.zc-reveal {
+opacity: 0;
+transition: opacity 120ms ease;
+}
+.group:hover .zc-reveal,
+.zc-reveal:focus-within {
+opacity: 1;
 }

@@ -46,7 +46,10 @@ export async function seedDevLibrary() {
         ztoolkit.log(`dev seed: ${path} not found, skipping`);
         return;
       }
-      attachment = await Zotero.Attachments.importFromFile({ file: path, libraryID });
+      attachment = await Zotero.Attachments.importFromFile({
+        file: path,
+        libraryID,
+      });
       ztoolkit.log(`dev seed: imported ${path} as item ${attachment.id}`);
     }
 
@@ -62,8 +65,24 @@ export async function seedDevLibrary() {
     if (!alreadyOpen) {
       await Zotero.Reader.open(attachment.id);
       ztoolkit.log(`dev seed: opened reader for item ${attachment.id}`);
-    } else {
-      ztoolkit.log(`dev seed: reader already open for item ${attachment.id}`);
+      return;
+    }
+
+    // A plugin reload re-registers the section, but Zotero only picks up new
+    // custom sections inside `itemDetails.render()`, which fires on item or
+    // tab change. Nothing changed across a reload, so bounce the tab to force
+    // the panel to mount again.
+    const tabs2 = (win as any).Zotero_Tabs;
+    const readerTab = tabs.find(
+      (tab) => tab.type === "reader" && tab.data?.itemID === attachment!.id,
+    ) as { id?: string } | undefined;
+    if (readerTab?.id && tabs2?.select) {
+      tabs2.select("zotero-pane");
+      await Zotero.Promise.delay(120);
+      tabs2.select(readerTab.id);
+      ztoolkit.log(
+        `dev seed: bounced reader tab ${readerTab.id} to force re-render`,
+      );
     }
   } catch (err) {
     ztoolkit.log("dev seed failed", err);

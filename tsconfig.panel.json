@@ -1,0 +1,28 @@
+{
+  "//": "Panel side: runs in a real XHTML document inside the iframe.",
+  "extends": "zotero-types/entries/xhtml/",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "outDir": ".scaffold/types/panel",
+    "tsBuildInfoFile": ".scaffold/types/panel.tsbuildinfo"
+  },
+  "include": [
+    "src/panel-app/**/*.ts",
+    "src/panel-app/**/*.tsx",
+    "src/ui/**/*.tsx",
+    "src/ui/**/*.ts",
+    "src/dev/radixProbe.tsx",
+    "src/utils/report.ts",
+    "typings/panel.d.ts",
+    "typings/virtual.d.ts"
+  ]
+}

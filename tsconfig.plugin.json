@@ -1,0 +1,34 @@
+{
+  "//": "Plugin side: runs in the bootstrap sandbox, which has no DOM globals.",
+  "extends": "zotero-types/entries/sandbox/",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "outDir": ".scaffold/types/plugin",
+    "tsBuildInfoFile": ".scaffold/types/plugin.tsbuildinfo"
+  },
+  "include": [
+    "src/index.ts",
+    "src/addon.ts",
+    "src/hooks.ts",
+    "src/panel/**/*.ts",
+    "src/dev/seed.ts",
+    "src/utils/ztoolkit.ts",
+    "src/panel-app/bridge.ts",
+    "typings/plugin.d.ts",
+    "zotero-plugin.config.ts",
+    "package.json"
+  ]
+}
