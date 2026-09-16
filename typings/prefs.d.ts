@@ -14,7 +14,6 @@ declare namespace _ZoteroTypes {
       "showCostBar": boolean;
       "debugDumpPayload": boolean;
       "devSeedPDF": string;
-      "panelHeight": number;
       "devShowRadixProbe": boolean;
     };
   }

@@ -1,5 +1,6 @@
 import { config } from "../../package.json";
 import type { PanelBridge, PanelFrameElement } from "../panel-app/bridge";
+import { fitToItemPane } from "./sizing";
 
 const XHTML_NS = "http://www.w3.org/1999/xhtml";
 const PANEL_URL = `chrome://${config.addonRef}/content/panel.xhtml`;
@@ -45,18 +46,9 @@ function readTheme(win: Window): PanelBridge["theme"] {
 export interface PanelFrame {
   /** The element to insert into the section body (wraps the iframe). */
   element: HTMLElement;
+  /** Called after the element is in the DOM, so it can measure the pane. */
+  attached: () => void;
   destroy: () => void;
-}
-
-const HEIGHT_PREF = `${config.prefsPrefix}.panelHeight`;
-const MIN_HEIGHT = 240;
-const DEFAULT_HEIGHT = 420;
-
-function readStoredHeight(): number {
-  const stored = Number(Zotero.Prefs.get(HEIGHT_PREF, true));
-  return Number.isFinite(stored) && stored >= MIN_HEIGHT
-    ? stored
-    : DEFAULT_HEIGHT;
 }
 
 /**
@@ -73,24 +65,10 @@ export function createPanelFrame(
 ): PanelFrame {
   const win = doc.defaultView!;
 
-  /*
-   * Item pane sections size to their content, so the panel has to declare a
-   * height rather than stretch — a percentage height would collapse to zero
-   * and fight the section's collapse animation.
-   *
-   * The wrapper owns that height and carries `resize: vertical`, which is how
-   * Zotero plugins let users size a panel; the chosen height is persisted so
-   * it survives tab switches and restarts.
-   */
+  // `fitToItemPane` owns the height; the wrapper just provides a flex column
+  // for the frame to fill.
   const wrapper = doc.createElementNS(XHTML_NS, "div") as HTMLDivElement;
-  wrapper.style.cssText = [
-    `height:${readStoredHeight()}px`,
-    `min-height:${MIN_HEIGHT}px`,
-    "resize:vertical",
-    "overflow:hidden",
-    "display:flex",
-    "flex-direction:column",
-  ].join(";");
+  wrapper.style.cssText = "overflow:hidden;display:flex;flex-direction:column;";
 
   const frame = doc.createElementNS(XHTML_NS, "iframe") as HTMLIFrameElement;
   frame.setAttribute("src", PANEL_URL);
@@ -98,18 +76,6 @@ export function createPanelFrame(
   frame.style.cssText =
     "flex:1;width:100%;min-height:0;border:0;display:block;background:transparent;";
   wrapper.append(frame);
-
-  // Persist whatever height the user drags to, debounced so a drag writes once.
-  let heightTimer: number | undefined;
-  const observer = new (win as any).ResizeObserver(() => {
-    const height = Math.round(wrapper.getBoundingClientRect().height);
-    if (height < MIN_HEIGHT) return;
-    if (heightTimer !== undefined) win.clearTimeout(heightTimer);
-    heightTimer = win.setTimeout(() => {
-      Zotero.Prefs.set(HEIGHT_PREF, height, true);
-    }, 400);
-  });
-  observer.observe(wrapper);
 
   const themeListeners = new Set<(theme: PanelBridge["theme"]) => void>();
   const media = win.matchMedia("(prefers-color-scheme: dark)");
@@ -138,11 +104,17 @@ export function createPanelFrame(
   // Attached before insertion, so the panel can never signal before we listen.
   (frame as HTMLIFrameElement & PanelFrameElement).__zcOnReady = mount;
 
+  let sizing: { dispose: () => void } | undefined;
+
   return {
     element: wrapper,
+    // Measuring only works once the wrapper is in the pane, so the caller
+    // tells us when that has happened.
+    attached: () => {
+      sizing = fitToItemPane(wrapper);
+    },
     destroy: () => {
-      observer.disconnect();
-      if (heightTimer !== undefined) win.clearTimeout(heightTimer);
+      sizing?.dispose();
       media?.removeEventListener("change", pushTheme);
       themeListeners.clear();
       try {

@@ -9,7 +9,5 @@ pref("__prefsPrefix__.debugDumpPayload", false);
 // Development fixture: absolute path to a PDF imported into an empty dev library.
 pref("__prefsPrefix__.devSeedPDF", "");
 
-// Panel height, in px; the user sets it by dragging the panel's resize handle.
-pref("__prefsPrefix__.panelHeight", 420);
 // Dev-only: render the Radix-in-iframe probe inside the panel.
 pref("__prefsPrefix__.devShowRadixProbe", false);

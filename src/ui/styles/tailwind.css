@@ -3,6 +3,24 @@
 @tailwind utilities;
 
 /*
+ * The panel document fills its frame.
+ *
+ * `h-full` anywhere below needs a definite height on every ancestor, and an
+ * XHTML document's html/body default to auto — without this the composer
+ * floats up under the empty state instead of sitting at the bottom.
+ */
+html,
+body,
+#zc-root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+/*
  * The panel renders inside a shadow root, so this stylesheet is fully isolated
  * from Zotero and vice versa. Two consequences shape what follows:
  *

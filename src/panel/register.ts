@@ -87,6 +87,7 @@ export function registerPanelSection() {
 
       frames.set(el, frame);
       el.replaceChildren(frame.element);
+      frame.attached();
     },
 
     onDestroy: ({ body }) => {
