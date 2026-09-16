@@ -1,0 +1,112 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import autoprefixer from "autoprefixer";
+import type { Plugin } from "esbuild";
+import postcss from "postcss";
+import tailwindcss from "tailwindcss";
+import { defineConfig } from "zotero-plugin-scaffold";
+
+import pkg from "./package.json";
+
+const TAILWIND_ENTRY = resolve("src/ui/styles/tailwind.css");
+const VIRTUAL_ID = "virtual:panel-css";
+
+/**
+ * Compiles the Tailwind entry and hands it to the bundle as a JS string.
+ *
+ * The panel lives in a shadow root, so its stylesheet is installed at runtime
+ * via `adoptedStyleSheets` rather than linked from a file. Shipping the CSS as
+ * a string means no file IO and no chrome:// URL resolution at runtime.
+ */
+function tailwindAsString(): Plugin {
+  return {
+    name: "zc-tailwind-as-string",
+    setup(build) {
+      build.onResolve({ filter: /^virtual:panel-css$/ }, () => ({
+        path: VIRTUAL_ID,
+        namespace: "zc-virtual",
+      }));
+
+      build.onLoad({ filter: /.*/, namespace: "zc-virtual" }, async () => {
+        const source = readFileSync(TAILWIND_ENTRY, "utf8");
+        const result = await postcss([
+          tailwindcss(),
+          autoprefixer({ overrideBrowserslist: ["Firefox >= 115"] }),
+        ]).process(source, { from: TAILWIND_ENTRY });
+
+        return {
+          contents: `export default ${JSON.stringify(result.css)};`,
+          loader: "js",
+          // Re-run when the entry or the Tailwind config changes. Class-name
+          // scanning still needs a full rebuild, which the scaffold watcher
+          // triggers on any `src` change.
+          watchFiles: [TAILWIND_ENTRY, resolve("tailwind.config.js")],
+        };
+      });
+    },
+  };
+}
+
+const isProd = process.env.NODE_ENV === "production";
+
+export default defineConfig({
+  source: ["src", "addon"],
+  dist: ".scaffold/build",
+  name: pkg.config.addonName,
+  id: pkg.config.addonID,
+  namespace: pkg.config.addonRef,
+  updateURL: `https://github.com/{{owner}}/{{repo}}/releases/download/release/${
+    pkg.version.includes("-") ? "update-beta.json" : "update.json"
+  }`,
+  xpiDownloadLink:
+    "https://github.com/{{owner}}/{{repo}}/releases/download/v{{version}}/{{xpiName}}.xpi",
+
+  build: {
+    assets: ["addon/**/*.*"],
+    define: {
+      ...pkg.config,
+      author: pkg.author ?? "",
+      description: pkg.description,
+      homepage: pkg.homepage ?? "",
+      buildVersion: pkg.version,
+      buildTime: "{{buildTime}}",
+    },
+    prefs: {
+      prefix: pkg.config.prefsPrefix,
+    },
+    esbuildOptions: [
+      {
+        entryPoints: ["src/index.ts"],
+        bundle: true,
+        // Zotero 7 runs on Firefox 115 ESR; 8 and 9 run on 140. Target the
+        // floor so one bundle serves all three.
+        target: "firefox115",
+        format: "iife",
+        jsx: "automatic",
+        plugins: [tailwindAsString()],
+        define: {
+          "process.env.NODE_ENV": isProd ? '"production"' : '"development"',
+          __env__: `"${process.env.NODE_ENV ?? "development"}"`,
+        },
+        minify: isProd,
+        sourcemap: isProd ? false : "inline",
+        outfile: `.scaffold/build/addon/content/scripts/${pkg.config.addonRef}.js`,
+      },
+    ],
+  },
+
+  server: {
+    devtools: true,
+    // `--jsdebugger` opens the Browser Toolbox; enable it when you need it.
+    startArgs: [],
+    prefs: {
+      // Seeds the throwaway dev library so the reader has something to open.
+      [`${pkg.config.prefsPrefix}.devSeedPDF`]: resolve("fixtures/attention.pdf"),
+    },
+  },
+
+  test: {
+    waitForPlugin: `() => Zotero.${pkg.config.addonInstance}.data.initialized`,
+  },
+});
