@@ -1,0 +1,185 @@
+/*
+ * Preference pane. Same tokens and restraint as the chat panel:
+ * no cards, no shadows, 3–4px radii, 8px grid, 14/12 type.
+ * Loaded into Zotero's preferences window, which already has the host
+ * theme variables.
+ */
+
+.zc-prefs {
+  --zc-surface: var(--material-sidepane, #ffffff);
+  --zc-surface-subtle: var(--material-mix-quarternary, #f7f7f5);
+  --zc-surface-hover: var(--fill-quinary, #efefed);
+  --zc-border: var(--fill-quinary, #e9e9e7);
+  --zc-fg: var(--fill-primary, #37352f);
+  --zc-fg-muted: var(--fill-secondary, #6f6e69);
+  --zc-fg-faint: var(--fill-tertiary, #9b9a97);
+  --zc-accent: var(--color-accent, #2383e2);
+  --zc-accent-fg: #ffffff;
+  --zc-danger: var(--color-red, #e03e3e);
+
+  box-sizing: border-box;
+  max-width: 480px;
+  padding: 8px 8px 24px;
+  color: var(--zc-fg);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif, system-ui,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.zc-prefs *,
+.zc-prefs *::before,
+.zc-prefs *::after {
+  box-sizing: border-box;
+}
+
+.zc-prefs-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--zc-fg);
+}
+
+.zc-prefs-lead {
+  margin: 0 0 24px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--zc-fg-muted);
+}
+
+.zc-prefs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.zc-prefs-heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--zc-fg-faint);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.zc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zc-label {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--zc-fg-muted);
+}
+
+.zc-hint {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--zc-fg-faint);
+}
+
+.zc-input {
+  height: 28px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--zc-surface-subtle);
+  color: var(--zc-fg);
+  font: inherit;
+  font-size: 14px;
+  line-height: 21px;
+  outline: none;
+}
+
+select.zc-input {
+  /* Native arrows sit on the padding edge and get clipped by radius.
+     Draw our own, inset from the right. */
+  appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding-right: 28px;
+  background-color: var(--zc-surface-subtle);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%236f6e69' d='M2.4 4.2a.75.75 0 0 1 1.05-.05L6 6.52l2.55-2.37a.75.75 0 0 1 1 1.1L6.5 8.05a.75.75 0 0 1-1 0L2.45 5.25a.75.75 0 0 1-.05-1.05z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px 12px;
+}
+
+.zc-input:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--zc-accent) 40%, transparent);
+}
+
+.zc-input::placeholder {
+  color: var(--zc-fg-faint);
+}
+
+.zc-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.zc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--zc-surface-subtle);
+  color: var(--zc-fg);
+  font: inherit;
+  font-size: 14px;
+  line-height: 21px;
+  cursor: pointer;
+}
+
+.zc-btn:hover {
+  background: var(--zc-surface-hover);
+}
+
+.zc-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--zc-accent) 40%, transparent);
+}
+
+.zc-btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.zc-btn-primary {
+  background: var(--zc-accent);
+  color: var(--zc-accent-fg);
+}
+
+.zc-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.zc-status {
+  margin: 0;
+  min-height: 18px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--zc-fg-faint);
+}
+
+.zc-status[data-kind="ok"] {
+  color: var(--zc-fg-muted);
+}
+
+.zc-status[data-kind="error"] {
+  color: var(--zc-danger);
+}

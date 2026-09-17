@@ -15,6 +15,10 @@ body,
   height: 100%;
 }
 
+html {
+  font-size: var(--zc-font-size, 14px);
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -38,9 +42,10 @@ body {
 :host {
   display: block;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif,
-    system-ui, sans-serif;
-  font-size: 14px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif, system-ui,
+    sans-serif;
+  font-size: var(--zc-font-size, 14px);
   font-weight: 400;
   font-style: normal;
   line-height: 1.5;
@@ -130,15 +135,179 @@ body {
   scrollbar-color: transparent transparent;
 }
 .zc-scroll:hover {
-scrollbar-color: var(--zc-fg-faint) transparent;
+  scrollbar-color: var(--zc-fg-faint) transparent;
 }
 
 /* Notion's hover-reveal: actions stay out of the way until you reach for them. */
 .zc-reveal {
-opacity: 0;
-transition: opacity 120ms ease;
+  opacity: 0;
+  transition: opacity 120ms ease;
 }
 .group:hover .zc-reveal,
 .zc-reveal:focus-within {
-opacity: 1;
+  opacity: 1;
+}
+
+/* Streaming caret. Opacity-only, matching the motion budget. */
+.zc-caret {
+  display: inline-block;
+  width: 1.5px;
+  height: 0.9em;
+  margin-left: 1px;
+  vertical-align: -0.1em;
+  background: var(--zc-fg);
+  animation: zc-caret 1s steps(1) infinite;
+}
+@keyframes zc-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ActionBarPrimitive.Copy sets data-copied on the button. */
+.zc-copied-icon {
+  display: none;
+}
+[data-copied] .zc-copy-icon {
+  display: none;
+}
+[data-copied] .zc-copied-icon {
+  display: inline;
+}
+
+/*
+ * Assistant markdown. Outside @layer so child selectors are not purged.
+ * Notion restraint: no card chrome, 8px rhythm, small radii, accent only
+ * on links and the quote rule.
+ */
+.zc-md {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.zc-md > :first-child {
+  margin-top: 0;
+}
+.zc-md > :last-child {
+  margin-bottom: 0;
+}
+.zc-md p {
+  margin: 0 0 8px;
+}
+.zc-md h1,
+.zc-md h2,
+.zc-md h3,
+.zc-md h4 {
+  margin: 16px 0 8px;
+  font-weight: 500;
+  color: var(--zc-fg);
+}
+.zc-md h1 {
+  font-size: 1.07em;
+  line-height: 1.45;
+}
+.zc-md h2 {
+  font-size: 1em;
+  line-height: 1.5;
+}
+.zc-md h3,
+.zc-md h4 {
+  font-size: 1em;
+  line-height: 1.5;
+  color: var(--zc-fg-muted);
+}
+.zc-md ul,
+.zc-md ol {
+  margin: 0 0 8px;
+  padding-left: 1.25em;
+}
+.zc-md li {
+  margin: 2px 0;
+}
+.zc-md li > p {
+  margin: 0;
+}
+.zc-md blockquote {
+  margin: 0 0 8px;
+  padding: 0 0 0 8px;
+  border-left: 2px solid var(--zc-accent);
+  color: var(--zc-fg-muted);
+}
+.zc-md hr {
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--zc-border);
+}
+.zc-md a {
+  color: var(--zc-accent);
+  text-decoration: none;
+}
+.zc-md a:hover {
+  text-decoration: underline;
+}
+.zc-md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.86em;
+  line-height: 1.5;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--zc-surface-subtle);
+}
+.zc-md pre {
+  margin: 0 0 8px;
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--zc-surface-subtle);
+  overflow-x: auto;
+}
+.zc-md pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 0.86em;
+  line-height: 1.5;
+}
+.zc-md table {
+  margin: 0 0 8px;
+  border-collapse: collapse;
+  font-size: 0.86em;
+  line-height: 1.5;
+}
+.zc-md th,
+.zc-md td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--zc-border);
+  text-align: left;
+}
+.zc-md th {
+  font-weight: 500;
+  color: var(--zc-fg-muted);
+}
+.zc-md img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+.zc-md-eq {
+  margin: 8px 0 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Overlay scrollbars sit in this padding, not on the glyphs. */
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--zc-fg-faint) transparent;
+}
+.zc-md-eq::-webkit-scrollbar {
+  height: 4px;
+}
+.zc-md-eq::-webkit-scrollbar-thumb {
+  background: var(--zc-fg-faint);
+  border-radius: 2px;
+}
+.zc-md math {
+  font-size: 1.05em;
+}
+.zc-md math[display="block"] {
+  display: block;
+  margin: 0;
+  overflow: visible;
 }

@@ -5,11 +5,11 @@
 
 ## 版本矩阵
 
-| Zotero | Gecko | 说明 |
-|---|---|---|
-| 7 | Firefox 115 ESR | Tailwind v4 要求 128+，所以我们锁 v3 |
-| 8 | Firefox 140 ESR | |
-| 9 | Firefox 140 ESR | 本机开发用的版本 |
+| Zotero | Gecko           | 说明                                 |
+| ------ | --------------- | ------------------------------------ |
+| 7      | Firefox 115 ESR | Tailwind v4 要求 128+，所以我们锁 v3 |
+| 8      | Firefox 140 ESR |                                      |
+| 9      | Firefox 140 ESR | 本机开发用的版本                     |
 
 运行时分支用 `Zotero.platformMajorVersion`（返回 115 / 128 / 140）。
 
@@ -90,7 +90,7 @@ ESM 的 import 先于导入者的函数体求值，所以任何"启动时安装�
 别去拼这个转义形式。要定位自己的 section，从自己的 iframe 反查：
 
 ```ts
-frame.closest("item-pane-custom-section")
+frame.closest("item-pane-custom-section");
 ```
 
 ### 2.3 reader tab 有独立的 item pane
@@ -139,12 +139,13 @@ JSON。显式传 `l10nArgs: "{}"`。
 
 ## 四、图标
 
-Zotero 用 `background-image` + `-moz-context-properties: fill, fill-opacity, stroke,
-stroke-opacity` 渲染图标，`[custom]` 规则里 `fill` 和 `stroke` 都设为
-`--fill-secondary`。
+当前插件图标是 **PNG**（`assets/logo.png` → `addon/content/icons/` 的 16/20/48/96）。
+Zotero 的 sidenav / header 用 `background-image` 画这些文件，不走 SVG `context-fill`。
 
-所以 SVG 要用 `fill="context-fill"` + **填充路径**（用 evenodd 画出描边效果），
-这是 Zotero 自己图标的写法。
+如果以后改回 SVG，Zotero 用 `background-image` + `-moz-context-properties: fill,
+fill-opacity, stroke, stroke-opacity` 渲染，`[custom]` 规则里 `fill` 和 `stroke`
+都设为 `--fill-secondary`。那时 SVG 要用 `fill="context-fill"` + **填充路径**
+（用 evenodd 画出描边效果），这是 Zotero 自己图标的写法。
 
 **注意 SVG paint 的 fallback 是空格分隔不是逗号**：`stroke="context-stroke, currentColor"`
 解析失败，图标整个不可见。
@@ -203,15 +204,17 @@ CSS 自定义属性不跨越 document 边界，所以宿主主题要显式桥接
 `itemDetails.render()` 的顺序：
 
 ```js
-box.item = item;                                   // 触发 onItemChange
-if (!collapsed && !box.hidden && box.render) box.render();   // 触发 onRender
+box.item = item; // 触发 onItemChange
+if (!collapsed && !box.hidden && box.render) box.render(); // 触发 onRender
 ```
 
 两个后果：
 
 1. **`onInit` 时 item 和 tabType 可能是 undefined。** 那时别急着
    `setEnabled(false)`——一旦置为 hidden，同轮的 render 会被跳过并记为 pending，
-   要等展开或下一次 item change 才补上。
+   要等展开或下一次 item change 才补上。XPI 安装后 sidenav 图标会整条消失，
+   看起来像「插件没装上」。v1 因此**始终 `setEnabled(true)`**：库视图点开是
+   「打开一个 PDF」空状态，真正开聊仍要 reader 里的 PDF。
 2. **插件热重载后 section 不会自动重渲染。** `renderCustomSections()` 只在
    `itemDetails.render()` 里跑，而重载时 item 和 tab 都没变。开发夹具通过强制切一次
    tab 来触发（`dev/seed.ts`）。
@@ -235,3 +238,92 @@ if (!collapsed && !box.hidden && box.render) box.render();   // 触发 onRender
 ### 7.3 `createZToolkit()` 不能读 `addon` 全局
 
 它在 `new Addon()` 构造期间被调用，那时 `addon` 还没赋值。直接 `import { config }`。
+
+---
+
+## 八、设置页脚本早于片段 DOM
+
+`Zotero.PreferencePanes.register({ scripts })` 会在**窗体注册 pane 时**加载
+`preferences.js`，这时 `addon/content/preferences.xhtml` 片段**还没插进文档**。
+
+症状：打开「编辑 → 设置 → ZoteroChat」，点「测试连接」毫无反应。日志里是
+`missing #zc-api-base-url`。不是按钮没绑上，是 `addEventListener` 跑在空文档上。
+
+解法（两道，缺一不可）：
+
+1. 根节点 `<vbox onload="ZoteroChat_Preferences.init()">`——片段插入后再绑字段。
+2. 测试按钮 `onclick="ZoteroChat_Preferences.test()"`——即使用户点得比 init 还早，
+   点击仍走得到。不要只在模块顶层 `getElementById` + `addEventListener`。
+
+API key 输入用原生 `type="password"`，系统自带眼睛，不要再叠一个 Show。
+
+---
+
+## 九、XHTML 面板不能 `innerHTML` 灌 HTML / MathML
+
+对话面板是 `chrome://zoterochat/content/panel.xhtml`，文档类型是 **XHTML**。
+`element.innerHTML = …` 走 **XML 解析器**。KaTeX 产出的 MathML 会触发：
+
+```
+InvalidCharacterError: An invalid or illegal string was specified
+```
+
+整块面板被 `ErrorBoundary` 卸掉，看起来像聊天崩了。常见触发：`<math>` 命名空间、
+`<annotation>` 里未转义的 `&` / `<`。
+
+解法见 [adr/0007](adr/0007-xhtml-html-inject.md)：`DOMParser("text/html")` +
+`importNode`，注入前剥掉 TeX `<annotation>`。实现在 `src/ui/markdown/setHtml.ts`。
+
+### 9.1 `importNode` 不移走源节点
+
+`importNode` **拷贝**，不 detach。下面这种循环会无限克隆，实测吃掉 **70GB+** 内存、
+界面冻死：
+
+```ts
+while (body.firstChild) {
+  frag.appendChild(dest.importNode(body.firstChild, true));
+}
+```
+
+必须先固定子节点列表：
+
+```ts
+for (const node of Array.from(parsed.body.childNodes)) {
+  frag.appendChild(dest.importNode(node, true));
+}
+```
+
+流式输出时 markdown+KaTeX 约 48ms 节流，避免半开的 `$$` 每个字符都重解析。
+
+---
+
+## 十、设置页 `<select>` 原生箭头会被圆角裁掉
+
+`.zc-input` 有 `border-radius: 4px` 和有限的右侧内边距。macOS / Gecko 的原生
+下拉箭头贴在 padding 边缘，会被圆角切掉一块——「优先语言」「字体大小」都中招。
+
+解法：`appearance: none` + `-moz-appearance: none`，自绘 chevron，
+`padding-right: 28px`，箭头放在 `right 8px`。见 `addon/content/preferences.css`。
+
+---
+
+## 十一、叉掉选区芯片后发送仍带上选区
+
+划词后 composer 上方出现「选中内容」芯片。用户叉掉芯片，期望这一轮不再把该段
+发给模型。早期实现仍会带上，因为发送路径有两层回落：
+
+1. 面板 `useThreadRuntime` 在芯片为 `null` 时回落到 `bridge.getSelection()`。
+2. 插件 `getSelection()` 会从阅读器 iframe **live 再读**当前高亮
+   （`liveTextFromReader`）。PDF 里的高亮并没有因为叉芯片而消失。
+
+发送真相必须是**芯片状态**，不是阅读器里还亮着的字。
+
+解法：
+
+- 叉掉时面板 `commitSelection(null)`，并调用 `bridge.dismissSelection()`。
+- `dismissSelection(itemID)` 记下该段的 fingerprint，放进 `omitted`；
+  `getSelection()` 撞上同一 fingerprint 就返回 `null`，直到下一次
+  `renderTextSelectionPopup` 或点「解释选区」。
+- 发送只读 `selectionRef.current`，**禁止** `getSelection() ?? bridge.getSelection()`。
+
+见 [adr/0008](adr/0008-selection-suffix.md)。

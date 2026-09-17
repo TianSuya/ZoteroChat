@@ -2,7 +2,6 @@ import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
   MessagePrimitive,
-  MessagePartPrimitive,
   ThreadPrimitive,
   useExternalStoreRuntime,
   type AppendMessage,

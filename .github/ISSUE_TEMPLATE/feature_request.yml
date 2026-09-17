@@ -1,0 +1,17 @@
+name: Feature request / 功能建议
+description: Describe a reading workflow you want to improve / 描述希望改进的阅读流程
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem / 使用中遇到的问题
+      description: Describe what you are trying to accomplish and the current limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior / 期望的行为
+      description: Include alternatives or workarounds you have considered.
+    validations:
+      required: true

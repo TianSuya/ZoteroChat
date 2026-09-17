@@ -1,0 +1,21 @@
+{
+  "//": "Preferences pane script: runs in Zotero Settings, which has a real DOM.",
+  "extends": "zotero-types/entries/xhtml/",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "outDir": ".scaffold/types/prefs",
+    "tsBuildInfoFile": ".scaffold/types/prefs.tsbuildinfo"
+  },
+  "include": ["src/prefs/pane.ts", "package.json"]
+}

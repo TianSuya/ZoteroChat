@@ -14,14 +14,14 @@
 
 实现后连续撞上六类失败：
 
-| 症状 | 根因 |
-|---|---|
-| `window is not defined` | bootstrap 沙箱不是 window |
-| `getComputedStyle is not defined` | 同上 |
+| 症状                                           | 根因                                           |
+| ---------------------------------------------- | ---------------------------------------------- |
+| `window is not defined`                        | bootstrap 沙箱不是 window                      |
+| `getComputedStyle is not defined`              | 同上                                           |
 | Radix 读 `globalThis?.document` 得到 undefined | `loadSubScript` 的 scope 对象不是 `globalThis` |
-| `useFocusGuards` 崩在 `document.body is null` | 主窗口是 XUL 根，没有 body |
-| `useLayoutEffect` 静默退化成空函数 | 库在**模块级**判环境，早于任何垫片安装 |
-| floating-ui 祖先遍历崩溃 | 遍历终止于 `ownerDocument.body`，仍是 null |
+| `useFocusGuards` 崩在 `document.body is null`  | 主窗口是 XUL 根，没有 body                     |
+| `useLayoutEffect` 静默退化成空函数             | 库在**模块级**判环境，早于任何垫片安装         |
+| floating-ui 祖先遍历崩溃                       | 遍历终止于 `ownerDocument.body`，仍是 null     |
 
 每一个都补了垫片，每一个之后又冒出下一个。
 
@@ -82,12 +82,12 @@ iframe 边界可以**编码进类型系统**：两份 tsconfig 分别用 zotero-
 
 `dev/radixProbe.tsx`，四类浮层：
 
-| | portaled | positioned | anchored | transform |
-|---|---|---|---|---|
-| tooltip | ✓ | ✓ | ✓ | `translate(0px, 146px)` |
-| dropdown-menu | ✓ | ✓ | ✓ | `translate(0px, 70px)` |
-| popover | ✓ | ✓ | ✓ | `translate(96px, 138px)` |
-| cmdk | ✓ | ✓ | ✓ | `translate(64px, 49px)` |
+|               | portaled | positioned | anchored | transform                |
+| ------------- | -------- | ---------- | -------- | ------------------------ |
+| tooltip       | ✓        | ✓          | ✓        | `translate(0px, 146px)`  |
+| dropdown-menu | ✓        | ✓          | ✓        | `translate(0px, 70px)`   |
+| popover       | ✓        | ✓          | ✓        | `translate(96px, 138px)` |
+| cmdk          | ✓        | ✓          | ✓        | `translate(64px, 49px)`  |
 
 `inBody: 4`、`escapedToDocument: 0`。
 

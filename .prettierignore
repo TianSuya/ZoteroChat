@@ -1,0 +1,26 @@
+node_modules/
+.git/
+.scaffold/
+.build/
+build/
+dist/
+coverage/
+.nyc_output/
+fixtures/
+.claude/
+.grok/
+.idea/
+.vscode/
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+*.xpi
+*.tsbuildinfo
+package-lock.json
+# Preserve the official license text verbatim.
+LICENSE.md
+# Preserve whitespace in Zotero XML templates.
+addon/content/*.xhtml

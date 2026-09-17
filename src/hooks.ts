@@ -1,6 +1,11 @@
 import { checkSizing } from "./dev/checkSizing";
 import { seedDevLibrary } from "./dev/seed";
 import { registerPanelSection, unregisterPanelSection } from "./panel/register";
+import { registerPreferencePane } from "./prefs/register";
+import {
+  registerReaderSelection,
+  unregisterReaderSelection,
+} from "./reader/selection";
 
 async function onStartup() {
   await Promise.all([
@@ -9,7 +14,9 @@ async function onStartup() {
     Zotero.uiReadyPromise,
   ]);
 
+  await registerPreferencePane();
   registerPanelSection();
+  registerReaderSelection();
 
   addon.data.initialized = true;
   ztoolkit.log("startup complete");
@@ -27,6 +34,7 @@ async function onMainWindowUnload(_win: Window) {
 }
 
 function onShutdown() {
+  unregisterReaderSelection();
   unregisterPanelSection();
 
   addon.data.alive = false;

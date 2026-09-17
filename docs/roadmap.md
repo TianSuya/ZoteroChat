@@ -2,43 +2,45 @@
 
 ## 状态
 
-| 阶段 | 内容 | 状态 |
-|---|---|---|
-| **M0** | 脚手架、manifest（7/8/9 兼容）、bootstrap、esbuild + Tailwind 管线、热重载 | ✅ |
-| **M1** | iframe 挂载 + React root + shadcn 组件 Notion 化 + 高度自适应 | ✅ |
-| **M2** | 全文提取 + 规范化 + Chat Completions SSE + `useExternalStoreRuntime` 接线 | ⬜ |
-| **M3** | `prefixBuilder` + `stableStringify` + `prefixLedger` + `prompt_cache_key` + usage 归一化 + 成本条 | ⬜ |
-| **M4** | DB 落地（append-only）+ 会话绑定 item + 重启恢复 + 划词 popup | ⬜ |
-| **M5** | 长文固化压缩 + checkpoint 换会话 + 上下文水位提示 | ⬜ |
-| **M6** | Markdown + MathML 渲染、斜杠命令菜单、导出 Zotero 笔记、设置面板 | ⬜ |
+| 阶段   | 内容                                                                         | 状态                                                                                                                   |
+| ------ | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **M0** | 脚手架、manifest（7/8/9 兼容）、bootstrap、esbuild + Tailwind 管线、热重载   | ✅                                                                                                                     |
+| **M1** | iframe 挂载 + React root + shadcn 组件 Notion 化 + 高度自适应                | ✅                                                                                                                     |
+| **M2** | 全文提取 + 规范化 + Chat Completions SSE + `useExternalStoreRuntime` 接线    | ✅                                                                                                                     |
+| **M3** | `prefixBuilder` + `stableStringify` + `prefixLedger` + usage 归一化 + 成本条 | ✅ 已接到发请求路径；单元测试覆盖 prefix 稳定与 language 不破前缀。`prompt_cache_key` 未发送；端到端命中率尚未专测     |
+| **M4** | DB 落地（append-only）+ 会话绑定 item + 重启恢复 + 划词 popup                | ⬜ **划词已交付**（芯片、消息标注、弹窗解释、dismiss，见 [adr/0008](adr/0008-selection-suffix.md)）；sqlite 持久化未做 |
+| **M5** | 长文固化压缩 + checkpoint 换会话 + 上下文水位提示                            | ⬜                                                                                                                     |
+| **M6** | Markdown + MathML、斜杠命令、导出笔记、设置面板                              | ⬜ **渲染 / 斜杠 / 设置 / 语言 / 字号已交付**（XHTML 注入见 [adr/0007](adr/0007-xhtml-html-inject.md)）；导出笔记未做  |
 
 ## 已完成部分的遗留项
 
 这些不阻塞后续开发，但需要记在案：
 
-| 项 | 说明 |
-|---|---|
-| **Zotero 7 未实测** | 本机只有 9.0.6（Gecko 140）。7 的兼容性靠 `target: firefox115` 和 Tailwind v3 留的余量，没有真机验证 |
-| **高度自适应的部分场景未实测** | 窗口缩放、拖 item pane 分栏、兄弟 section 展开折叠——只验证了 observer 挂载和初始计算 |
-| **热重载不重载 iframe 文档** | 改面板代码后有时需要完整重启。开发夹具会切 tab 强制重建 section 来缓解 |
-| **空状态排版** | 窄窗口下提示文字会被 composer 边缘裁到。M6 重排时一并处理 |
-| **assistant-ui MCP 未接入** | 官方提供 `https://www.assistant-ui.com/mcp`，接上后查 API 更可靠，目前靠 `/llms-full.txt` |
+| 项                             | 说明                                                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| **Zotero 7 未实测**            | 本机只有 9.0.6（Gecko 140）。7 的兼容性靠 `target: firefox115` 和 Tailwind v3 留的余量，没有真机验证 |
+| **高度自适应的部分场景未实测** | 窗口缩放、拖 item pane 分栏、兄弟 section 展开折叠——只验证了 observer 挂载和初始计算                 |
+| **热重载不重载 iframe 文档**   | 改面板代码后有时需要完整重启。开发夹具会切 tab 强制重建 section 来缓解                               |
+| **空状态排版**                 | 窄窗口下提示文字会被 composer 边缘裁到。M6 重排时一并处理                                            |
+| **assistant-ui MCP 未接入**    | 官方提供 `https://www.assistant-ui.com/mcp`，接上后查 API 更可靠，目前靠 `/llms-full.txt`            |
 
 ## M2 的计划
 
 组件顺序（先用假数据把 UI 做实，再接真实链路）：
 
-1. `Message` —— user 块级 + 左竖线，assistant 裸排版
-2. `Composer` —— 自适应高度 textarea + 选区 chip
-3. `SlashMenu` —— cmdk，命令项可配置
-4. `CostBar` —— 命中率 / token / 成本
+1. `Message` —— user 块级 + 左竖线，assistant 裸排版 ✅
+2. `Composer` —— 自适应高度 textarea + 选区 chip ✅
+3. `SlashMenu` —— cmdk，命令项可配置 ✅
+4. `CostBar` —— 命中率 / token / 成本 ✅ 读归一化后的 usage
 
 然后接线：
 
-5. `context/extract.ts` —— `Zotero.PDFWorker.getFullText` + `sourceRevision`
-6. `context/normalize.ts` —— 字节规范化（缓存正确性的基石）
-7. `llm/client/chatCompletions.ts` —— SSE 流式
-8. `runtime/externalStore.ts` —— `useExternalStoreRuntime` adapter + in-flight 内存态
+5. `context/extract.ts` —— `Zotero.PDFWorker.getFullText` + `sourceRevision` ✅
+6. `context/normalize.ts` —— 字节规范化（缓存正确性的基石） ✅
+7. `llm/client/chatCompletions.ts` —— SSE 流式 ✅
+8. `runtime/externalStore.ts` —— `useExternalStoreRuntime` adapter + in-flight 内存态 ✅
+
+M2 测试端点：`deepseek-flash`（DeepSeek-V4.1-Flash），`thinking` 关闭以降低侧栏延迟。前缀冻结与 ledger 已接到发请求路径上；成本条读 `prompt_cache_hit_tokens`。划词见 M4 已交付部分。
 
 ## 计划中的模块
 
@@ -62,7 +64,7 @@ src/
     db.ts             独立 sqlite（new Zotero.DBConnection("zoterochat")）
     conversations.ts / messages.ts / documents.ts
   reader/
-    selectionPopup.ts / selection.ts
+    selection.ts      ✅ popup + 芯片 + dismiss + 解释选区
   runtime/
     externalStore.ts  assistant-ui adapter
     inflight.ts       流式内存态

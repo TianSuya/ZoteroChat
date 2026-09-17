@@ -1,6 +1,6 @@
 # 0003. 前缀冻结换缓存命中
 
-**状态**：已采纳（M3 实现）
+**状态**：已采纳（内存会话已接到发请求路径）
 **日期**：2026-09
 
 ## 背景
@@ -17,27 +17,37 @@
 可被验证。
 
 ```
-[0]     system          固定常量
+[0]     system          固定常量（含 LaTeX 输出约定）。禁止插值日期 / 模型名 / UI 语言 / 论文标题
 [1]     user   PAPER    全文
 [2]     assistant ACK   固定 ack
 [3..n]  历史轮次         append-only
-[n+1]   user  CURRENT   选区 + 问题 + 动态指令
+[n+1]   user  CURRENT   <turn-directives>（语言锁，放最前）
+                        + 可选 <selection>
+                        + <question>
 ```
+
+`src/llm/prefixBuilder.ts` 的 `buildCurrentUserMessage` 按这个顺序拼当前轮。
+划词属于当前轮，见 [0008](0008-selection-suffix.md)。
 
 配套：
 
-- `prompt_cache_key = "zc:{libraryID}:{attachmentKey}"` —— 一篇论文一条稳定 lane
 - `PrefixLedger` 记录已发送前缀的 hash，每次请求前比对，不一致记 `prefix_break`
 - 自写 `stableStringify`（key 排序），禁止裸 `JSON.stringify` 进 prompt
 - 全文提取后规范化：去 BOM、`\r\n`→`\n`、NFC、trim、压缩连续空行
+- 语言、详略等动态偏好只写在 `[n+1]` 的 `<turn-directives>`，**绝不进 system**
+- OpenAI 的 `prompt_cache_key` **尚未发送**。计划值是
+  `zc:{libraryID}:{attachmentKey}`；DeepSeek 当前只靠前缀字节匹配。不要在文档里
+  假装已经发出去了。
 
 ## 理由
 
 `[1][2]` 构成闭合前缀单元，满足 DeepSeek 的完整单元匹配规则（`A+B → A+B+C` 命中，
 `A+B → A+C` 不命中），同时让第 3 轮起 `[0..2]` 稳定命中。
 
-一切动态偏好（回答语言、详略、当前日期）放最后一轮的 `<turn-directives>`，
-**绝不进 system**——system 在前缀最前面，动一下整条链全废。
+一切动态偏好（回答语言、详略）放最后一轮的 `<turn-directives>`，
+**绝不进 system**——system 在前缀最前面，动一下整条链全废。语言锁放在当前轮
+最前，避免被长问题或选区淹没；目标语言必须**转述**，禁止「引文保持原文」——
+那条旧措辞会把英文句子拼进中文回答。
 
 ### 为什么必须有 ledger
 
@@ -65,9 +75,15 @@ ledger 把"我们的缓存策略有效"从一个信念变成一个可以被 CI �
 
 ## 证据
 
-待 M3 实现后补：
+已有单元测试（`src/llm/prefixBuilder.test.ts`、`src/i18n/directives.test.ts`）：
 
-- 单元测试：`buildPrefix(item)` 连续 20 次 byte-identical；`normalize()` 幂等
-- 端到端：一篇真实 PDF 连问 10 题，第 2 轮起 `cached_tokens >= paperBlockTokens * 0.9`，
-  全程 `prefix_break == 0`
-- A/B 对照：同组问题跑 freeze 模式 vs 模拟 aidea 的 rebuild 模式，对比累计 input 成本
+- `frozenPrefix` 连续调用 byte-identical
+- append-only 追问 `ledger.check` 通过；改写 paper 元数据则 `ok === false`
+- 只改 `replyLanguage` 不触发 prefix_break
+- 语言锁出现在 `<question>` 之前；zh-CN 指令不含 `original wording`
+
+尚未做（仍在 [roadmap.md](../roadmap.md)）：
+
+- 端到端：一篇真实 PDF 连问 10 题，第 2 轮起
+  `prompt_cache_hit_tokens >= paperBlockTokens * 0.9`，全程 `prefix_break == 0`
+- A/B 对照：freeze 模式 vs 模拟 aidea 的 rebuild 模式，对比累计 input 成本

@@ -6,6 +6,32 @@
  * direct object handoff — no postMessage, no serialization. Keeping the
  * surface explicit anyway makes it obvious what the UI is allowed to touch.
  */
+import type { UiLanguage } from "../i18n/languages";
+
+export type BridgePaperStatus = {
+  itemID: number;
+  title: string;
+  charCount: number;
+  hash: string;
+};
+
+export type BridgeUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  cacheHitTokens: number;
+  cacheMissTokens: number;
+};
+
+export type BridgeSelection = {
+  text: string;
+  page?: number;
+};
+
+export type BridgeStreamJob = {
+  cancel: () => void;
+  done: Promise<void>;
+};
+
 export interface PanelBridge {
   /** Attachment item backing this conversation. */
   itemID: number;
@@ -17,6 +43,35 @@ export interface PanelBridge {
   showProbe: boolean;
   /** Opt-in assistant-ui runtime probe. */
   showAssistantProbe: boolean;
+  /** Extract (or reuse) the frozen paper prefix for this attachment. */
+  beginConversation: () => Promise<BridgePaperStatus>;
+  /** Open this plugin's pane in Zotero settings. */
+  openPreferences: () => void;
+  /** Resolved UI language for chips, placeholders, and slash commands. */
+  getUiLanguage: () => UiLanguage;
+  onUiLanguageChange?: (listener: (lang: UiLanguage) => void) => () => void;
+  getFontSize: () => number;
+  onFontSizeChange?: (listener: (size: number) => void) => () => void;
+  /** Live PDF selection for this attachment. */
+  getSelection: () => BridgeSelection | null;
+  /** Drop the current highlight from this turn's context until the user selects again. */
+  dismissSelection: () => void;
+  onSelectionChange?: (
+    listener: (selection: BridgeSelection | null) => void,
+  ) => () => void;
+  /** Fired when the reader popup "explain selection" button is clicked. */
+  onExplainRequest?: (
+    listener: (selection: BridgeSelection) => void,
+  ) => () => void;
+  /** Send one turn. The plugin owns the wire-format history. */
+  streamTurn: (
+    req: { question: string; selection?: BridgeSelection | null },
+    handlers: {
+      onDelta: (text: string) => void;
+      onUsage?: (usage: BridgeUsage) => void;
+      onPrefixBreak?: () => void;
+    },
+  ) => BridgeStreamJob;
   /** Design tokens copied from the host window, plus the resolved theme. */
   theme: {
     mode: "light" | "dark";

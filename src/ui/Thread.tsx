@@ -1,4 +1,5 @@
-import { MessageSquarePlus, Sparkles } from "lucide-react";
+import { AuiIf, ThreadPrimitive } from "@assistant-ui/react";
+import { ArrowDown, MessageSquarePlus, Settings } from "lucide-react";
 
 import { Button } from "./components/button";
 import {
@@ -7,23 +8,56 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./components/tooltip";
+import { AssistantMessage } from "./thread/AssistantMessage";
+import type { BridgeUsage } from "../panel-app/bridge";
+import { Composer, type SelectionChip } from "./thread/Composer";
+import { CostBar } from "./thread/CostBar";
+import { UserMessage } from "./thread/UserMessage";
+import { usePanelCopy } from "./ReplyLanguage";
+import { Welcome } from "./thread/Welcome";
+
+export type { SelectionChip };
 
 export interface ThreadProps {
   paperTitle: string;
-  /** Rendered under the composer while the panel has no real runtime yet. */
+  onNewConversation?: () => void;
+  onOpenSettings?: () => void;
+  selection?: SelectionChip | null;
+  onClearSelection?: () => void;
+  usage?: BridgeUsage | null;
+  charCount?: number;
+  prefixBreak?: boolean;
+  paperError?: string | null;
+  paperLoading?: boolean;
+  /** Dev-only probes, rendered outside the thread chrome. */
   children?: React.ReactNode;
 }
 
 /**
- * Static shell for the conversation.
+ * The conversation surface.
  *
- * Notion layout rules applied here: no card borders, no bubbles, hierarchy
- * from background and whitespace alone, and every action hidden until hover.
+ * Layout is ChatGPT's: a scrolling transcript with a composer pinned to the
+ * bottom. Visual language is Notion's: no bubbles, no card chrome, hover-reveal
+ * actions, 3–4px radii. Interaction is assistant-ui's primitives — we only
+ * supply the classes.
  */
-export function Thread({ paperTitle, children }: ThreadProps) {
+export function Thread({
+  paperTitle,
+  onNewConversation,
+  onOpenSettings,
+  selection,
+  onClearSelection,
+  usage = null,
+  charCount,
+  prefixBreak,
+  paperError,
+  paperLoading,
+  children,
+}: ThreadProps) {
+  const copy = usePanelCopy();
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="group/panel flex h-full min-h-0 flex-col bg-surface">
+      <ThreadPrimitive.Root className="group flex h-full min-h-0 flex-col bg-surface">
         <header className="flex h-8 shrink-0 items-center gap-1 px-2">
           <span
             className="truncate text-sm font-medium text-fg-muted"
@@ -31,39 +65,70 @@ export function Thread({ paperTitle, children }: ThreadProps) {
           >
             {paperTitle}
           </span>
-          <div className="ml-auto zc-reveal">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" aria-label="New conversation">
-                  <MessageSquarePlus size={14} strokeWidth={1.5} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>New conversation</TooltipContent>
-            </Tooltip>
+          <div className="ml-auto flex items-center gap-0.5">
+            <AuiIf condition={(s) => !s.thread.isEmpty}>
+              <span className="zc-reveal inline-flex">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      aria-label={copy.newConversation}
+                      onClick={onNewConversation}
+                    >
+                      <MessageSquarePlus size={14} strokeWidth={1.5} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{copy.newConversation}</TooltipContent>
+                </Tooltip>
+              </span>
+            </AuiIf>
+            {onOpenSettings ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    aria-label={copy.settings}
+                    onClick={onOpenSettings}
+                  >
+                    <Settings size={14} strokeWidth={1.5} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{copy.settings}</TooltipContent>
+              </Tooltip>
+            ) : null}
           </div>
         </header>
 
-        <div className="zc-scroll min-h-0 flex-1 overflow-y-auto px-3 py-2">
-          <div className="flex flex-col items-start gap-1 py-6 text-fg-faint">
-            <Sparkles size={16} strokeWidth={1.5} />
-            <p className="text-base text-fg-muted">Ask about this paper</p>
-            <p className="text-sm leading-relaxed">
-              The full text is already in context. Select text in the PDF to ask
-              about a specific passage.
-            </p>
-          </div>
-          {children}
-        </div>
+        <ThreadPrimitive.Viewport className="zc-scroll relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3">
+          <AuiIf condition={(s) => s.thread.isEmpty}>
+            <div className="flex min-h-0 flex-1 flex-col justify-center">
+              <Welcome />
+            </div>
+          </AuiIf>
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage,
+              AssistantMessage,
+            }}
+          />
+          <ThreadPrimitive.ScrollToBottom className="sticky bottom-2 z-10 mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-md bg-surface-raised text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg">
+            <ArrowDown size={14} strokeWidth={1.5} />
+          </ThreadPrimitive.ScrollToBottom>
+        </ThreadPrimitive.Viewport>
 
-        <footer className="shrink-0 px-3 pb-2">
-          <div className="rounded-md bg-surface-subtle px-2 py-1.5">
-            <p className="text-base text-fg-faint">
-              Ask anything… (press / for commands)
-            </p>
-          </div>
-          <p className="mt-1 text-xs text-fg-faint">Cache — · — tok · —</p>
+        <footer className="shrink-0 px-3 pb-2 pt-1">
+          <Composer selection={selection} onClearSelection={onClearSelection} />
+          <CostBar
+            usage={usage}
+            charCount={charCount}
+            prefixBreak={prefixBreak}
+            paperError={paperError}
+            paperLoading={paperLoading}
+          />
         </footer>
-      </div>
+
+        {children}
+      </ThreadPrimitive.Root>
     </TooltipProvider>
   );
 }

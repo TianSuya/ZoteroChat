@@ -2,8 +2,11 @@
 
 ## 快速开始
 
+使用 Node.js 24（见根目录 `.nvmrc`）与 npm。贡献流程见
+[CONTRIBUTING.md](../CONTRIBUTING.md)。
+
 ```bash
-npm install
+npm ci
 npm start         # 启动独立开发实例
 ```
 
@@ -19,6 +22,10 @@ ZOTERO_PLUGIN_PROFILE_PATH=~/Library/Application Support/ZoteroChatDev/profile
 ZOTERO_PLUGIN_DATA_DIR=~/Library/Application Support/ZoteroChatDev/data
 ```
 
+开发期 API key：设置页填写，或把 gitignore 的 `deepseek.key` 路径写进 pref
+`devApiKeyFile`（仅当设置页 key 为空时回退，见 `src/llm/secrets.ts`）。默认端点
+`https://api.deepseek.com`，模型 `deepseek-flash`，请求带 `thinking: { type: "disabled" }`。
+
 夹具 PDF 放在 `fixtures/`（已 gitignore）。任意开放获取的论文都行：
 
 ```bash
@@ -27,22 +34,57 @@ curl -sL -o fixtures/attention.pdf https://arxiv.org/pdf/1706.03762v7
 
 ## 命令
 
-| 命令 | 作用 |
-|---|---|
-| `npm start` | 开发实例 + 热重载 |
-| `npm run build` | 类型检查 + 产出 `.scaffold/build/*.xpi` |
-| `npm run typecheck` | `tsc -b`，同时检查插件侧与面板侧 |
-| `npm run lint` / `lint:fix` | eslint + prettier |
-| `npm test` | vitest |
+| 命令                              | 作用                                      |
+| --------------------------------- | ----------------------------------------- |
+| `npm start`                       | 开发实例 + 热重载                         |
+| `npm run build`                   | 类型检查 + 产出 `.scaffold/build/*.xpi`   |
+| `npm run build:production`        | 跨平台设置 production 环境并构建 XPI      |
+| `npm run typecheck`               | `tsc -b`，同时检查插件侧与面板侧          |
+| `npm run lint` / `lint:fix`       | ESLint 检查 / 自动修复                    |
+| `npm run format:check` / `format` | Prettier 格式检查 / 格式化                |
+| `npm test`                        | vitest                                    |
+| `npm run check`                   | lint + 格式 + 类型 + 单元测试，和 CI 一致 |
+
+GitHub Actions 配置在 `.github/workflows/ci.yml`，使用 Node.js 24 执行
+`npm ci`、`npm run check` 和生产构建，并保留 XPI 为构建产物。CI 不会启动
+Zotero，也不会向模型端点发送请求；运行时兼容性仍需单独验证。
+
+`.editorconfig`、`.gitattributes` 与 Prettier 统一文本格式。XHTML 模板保留手工排版，
+避免格式化改变空白；自动生成目录、私有夹具和本地配置不参加格式检查。
 
 ## 构建管线
 
-两个 esbuild entry，对应架构上的两侧：
+三个 esbuild entry，分别对应插件、对话面板和设置页：
 
-| entry | 产物 | target | 说明 |
-|---|---|---|---|
-| `src/index.ts` | `content/scripts/zoterochat.js` | firefox115 | 插件侧，无 React |
-| `src/panel-app/index.tsx` | `content/scripts/panel.js` | firefox115 | 面板侧，React + Radix + Tailwind |
+| entry                     | 产物                             | target     | 说明                             |
+| ------------------------- | -------------------------------- | ---------- | -------------------------------- |
+| `src/index.ts`            | `content/scripts/zoterochat.js`  | firefox115 | 插件侧，无 React                 |
+| `src/panel-app/index.tsx` | `content/scripts/panel.js`       | firefox115 | 面板侧，React + Radix + Tailwind |
+| `src/prefs/pane.ts`       | `content/scripts/preferences.js` | firefox115 | 设置页 DOM                       |
+
+## 打包安装包
+
+```bash
+npm run build:production
+```
+
+产物在 `.scaffold/build/` 下的 `.xpi`。可以拷到 `release/` 方便本地安装，但
+**不要把 `.xpi` 提交进 git**（`*.xpi` 已 ignore）。对外分发走 GitHub Releases。
+
+在自己的 Zotero 里：**工具 → 插件 → 齿轮 → 从文件安装插件…**。不要把开发用的
+`deepseek.key` 打进包——key 只在设置页填写。
+
+本地绝对不能提交的：
+
+| 路径                     | 原因                                   |
+| ------------------------ | -------------------------------------- |
+| `deepseek.key` / `*.key` | API 密钥                               |
+| `.env`                   | 本机 Zotero 路径（含用户目录）         |
+| `fixtures/`              | 开发用 PDF                             |
+| `.scaffold/`             | 构建产物与 Zotero 日志（可能含请求体） |
+| `node_modules/`、`*.xpi` | 依赖与安装包                           |
+
+`npm start` 用独立 profile（`ZoteroChatDev`）。日常文献库里的安装走 XPI，两套互不影响。
 
 `target: firefox115` 是为 Zotero 7 留的下限，一份产物服务 7/8/9。
 
@@ -79,11 +121,11 @@ Fluent 文件有缓存，热重载不刷新。见
 三个 dev-only 模块，**production 构建会被 esbuild 整个剔除**（靠 `__env__` define
 做死代码消除）。默认关闭，靠 pref 开启，用于依赖升级后的回归检查。
 
-| 探针 | pref | 验证什么 |
-|---|---|---|
-| `dev/radixProbe.tsx` | `devShowRadixProbe` | tooltip / dropdown / popover / cmdk 四类浮层在 iframe 内 portal、定位、锚定、取到样式 |
-| `dev/assistantProbe.tsx` | `devShowAssistantProbe` | assistant-ui 运行时渲染、流式、capability gating |
-| `dev/checkSizing.ts` | 总是运行（dev） | 高度自适应在「静止」与「滚到顶」两种状态下都贴底 |
+| 探针                     | pref                    | 验证什么                                                                              |
+| ------------------------ | ----------------------- | ------------------------------------------------------------------------------------- |
+| `dev/radixProbe.tsx`     | `devShowRadixProbe`     | tooltip / dropdown / popover / cmdk 四类浮层在 iframe 内 portal、定位、锚定、取到样式 |
+| `dev/assistantProbe.tsx` | `devShowAssistantProbe` | assistant-ui 运行时渲染、流式、capability gating                                      |
+| `dev/checkSizing.ts`     | 总是运行（dev）         | 高度自适应在「静止」与「滚到顶」两种状态下都贴底                                      |
 
 开启方式（`zotero-plugin.config.ts` 的 `server.prefs`）：
 
@@ -135,14 +177,56 @@ grep -n "ERROR BOUNDARY" "$(ls -t .scaffold/logs/zotero-*[0-9].log | head -1)"
 `ui/ErrorBoundary.tsx` 会把渲染期异常和 componentStack 写进日志——面板文档里没有
 可见的 console，没有它这类错误是完全静默的。
 
-### 面板没出现
+### 右侧 sidenav 没有插件图标
+
+安装 XPI 后图标应始终在阅读器右侧栏。若没有：
+
+1. 确认插件在「工具 → 插件」里已启用，然后**完全退出再开** Zotero（不只重载）。
+2. 不要在 `onInit` 里 `setEnabled(false)`。那时 item 经常还是空的，图标会被藏掉
+   且同轮 render 被跳过。见 [environment.md §6](environment.md#六item-pane-section-的渲染时机)。
+3. 库视图点图标会看到「打开一个 PDF」空状态，这是预期；真正对话要在 reader 打开 PDF。
+
+`npm start` 的开发实例已经加载源码，**不要再往这个实例里装 XPI**，会叠两份。
+
+### 面板没出现 / 只有空状态
 
 按顺序确认：
 
-1. 当前是 reader tab 吗？（v1 只在 reader 启用）
-2. 打开的是 PDF 附件吗？（`item.isPDFAttachment()`）
+1. 当前是 reader tab 吗？库视图只会显示空状态。
+2. 打开的是 PDF，或文献条目下挂了 PDF 附件吗？（`getPdfItem()` 会从父条目解析附件）
 3. section 是展开的吗？折叠时 Zotero 会跳过 render
 4. 日志里有 `panel frame created` 吗？
+
+### 设置页「测试连接」没反应
+
+脚本可能早于 XHTML 片段插入。确认 `preferences.xhtml` 根 `vbox` 有 `onload`，
+测试按钮有 `onclick="ZoteroChat_Preferences.test()"`。见
+[environment.md §8](environment.md#八设置页脚本早于片段-dom)。
+
+日志：
+
+```bash
+grep -nE "ZoteroChat_Preferences|missing #zc" "$(ls -t .scaffold/logs/zotero-*[0-9].log | head -1)"
+```
+
+### 含公式的回复把面板卸掉 / 内存暴涨
+
+XHTML `innerHTML` + MathML → `InvalidCharacterError`；`importNode` 死循环会吃光
+内存。见 [environment.md §9](environment.md#九xhtml-面板不能-innerhtml-灌-html--mathml)
+和 [adr/0007](adr/0007-xhtml-html-inject.md)。日志里先搜 `ERROR BOUNDARY` 和
+`InvalidCharacterError`。
+
+### 中文设置下回复夹杂英文句子
+
+语言锁必须在当前轮 `<turn-directives>` **最前**，且禁止「引文保持原文」。
+不要把语言写进冻结的 system。见 `src/i18n/directives.ts` 与
+[adr/0003](adr/0003-prefix-freeze.md)。
+
+### 叉掉「选中内容」后模型仍看到那段
+
+发送不能回落到阅读器 live 选区。见
+[environment.md §11](environment.md#十一叉掉选区芯片后发送仍带上选区) 和
+[adr/0008](adr/0008-selection-suffix.md)。
 
 ### 浮层渲染了但看不见
 

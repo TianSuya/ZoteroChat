@@ -5,9 +5,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -24,6 +22,11 @@
     "src/addon.ts",
     "src/hooks.ts",
     "src/panel/**/*.ts",
+    "src/context/**/*.ts",
+    "src/i18n/**/*.ts",
+    "src/llm/**/*.ts",
+    "src/prefs/register.ts",
+    "src/reader/**/*.ts",
     "src/dev/seed.ts",
     "src/utils/ztoolkit.ts",
     "src/panel-app/bridge.ts",
@@ -31,5 +34,6 @@
     "zotero-plugin.config.ts",
     "package.json",
     "src/dev/checkSizing.ts"
-  ]
+  ],
+  "exclude": ["src/**/*.test.ts"]
 }

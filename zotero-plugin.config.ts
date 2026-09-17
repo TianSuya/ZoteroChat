@@ -15,8 +15,8 @@ const VIRTUAL_ID = "virtual:panel-css";
 /**
  * Compiles the Tailwind entry and hands it to the bundle as a JS string.
  *
- * The panel lives in a shadow root, so its stylesheet is installed at runtime
- * via `adoptedStyleSheets` rather than linked from a file. Shipping the CSS as
+ * The panel lives in an iframe, so its stylesheet is installed at runtime
+ * via a style element rather than linked from a file. Shipping the CSS as
  * a string means no file IO and no chrome:// URL resolution at runtime.
  */
 function tailwindAsString(): Plugin {
@@ -108,6 +108,17 @@ export default defineConfig({
         sourcemap: isProd ? false : "inline",
         outfile: ".scaffold/build/addon/content/scripts/panel.js",
       },
+      // Preferences pane: a real DOM document inside Zotero Settings.
+      {
+        entryPoints: ["src/prefs/pane.ts"],
+        bundle: true,
+        target: "firefox115",
+        format: "iife",
+        define: sharedDefine,
+        minify: isProd,
+        sourcemap: isProd ? false : "inline",
+        outfile: ".scaffold/build/addon/content/scripts/preferences.js",
+      },
     ],
   },
 
@@ -120,6 +131,7 @@ export default defineConfig({
       [`${pkg.config.prefsPrefix}.devSeedPDF`]: resolve(
         "fixtures/attention.pdf",
       ),
+      [`${pkg.config.prefsPrefix}.devApiKeyFile`]: resolve("deepseek.key"),
     },
   },
 

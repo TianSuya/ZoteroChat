@@ -3,16 +3,10 @@
   "extends": "zotero-types/entries/xhtml/",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -28,9 +22,18 @@
     "src/panel-app/**/*.tsx",
     "src/ui/**/*.tsx",
     "src/ui/**/*.ts",
+    "src/runtime/**/*.ts",
+    "src/runtime/**/*.tsx",
+    "src/llm/usage.ts",
+    "src/llm/types.ts",
+    "src/i18n/languages.ts",
+    "src/i18n/commands.ts",
+    "src/i18n/panelCopy.ts",
+    "src/i18n/directives.ts",
     "src/utils/report.ts",
     "typings/panel.d.ts",
     "typings/virtual.d.ts",
     "src/dev/*.tsx"
-  ]
+  ],
+  "exclude": ["src/**/*.test.ts"]
 }

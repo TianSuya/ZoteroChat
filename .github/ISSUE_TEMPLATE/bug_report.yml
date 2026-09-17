@@ -1,0 +1,39 @@
+name: Bug report / 问题反馈
+description: Report a reproducible problem / 提交可复现的问题
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English and Chinese are welcome. Remove API keys and private document content.
+        欢迎中英文反馈，请移除密钥与私有文献内容。安全问题请先阅读 SECURITY.md。
+  - type: input
+    id: version
+    attributes:
+      label: ZoteroChat version / 插件版本
+      placeholder: Version from Zotero's plugin manager, or commit ID
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Zotero version and OS / Zotero 版本与操作系统
+      placeholder: Zotero version, OS version, light or dark theme
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and model / 服务商与模型
+      description: Omit credentials and private endpoint addresses. Leave blank if unrelated.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      description: Include expected and actual behavior. Link a public PDF if necessary.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots / 日志或截图
+      description: Redact sensitive data. Mention prefix_break if it appears in the usage bar.

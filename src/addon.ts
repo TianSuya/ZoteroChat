@@ -12,6 +12,16 @@ class Addon {
     /** Registration IDs we need to hand back to Zotero on shutdown. */
     registry: {
       sectionID?: string | false;
+      prefsID?: string;
+    };
+    api?: {
+      testConnection: () => Promise<{
+        ok: boolean;
+        message: string;
+        model?: string;
+      }>;
+      clearSecretCache: () => void;
+      openPreferences: () => void;
     };
   };
 

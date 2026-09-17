@@ -1,0 +1,107 @@
+<linkset>
+  <html:link rel="localization" href="__addonRef__-preferences.ftl"/>
+</linkset>
+<vbox onload="ZoteroChat_Preferences.init()">
+  <html:div id="zoterochat-preferences" class="zc-prefs">
+    <html:h1 class="zc-prefs-title" data-l10n-id="prefs-title">ZoteroChat</html:h1>
+    <html:p class="zc-prefs-lead" data-l10n-id="prefs-lead">
+      OpenAI-compatible endpoint. The current paper is sent as context with every question.
+    </html:p>
+
+    <html:section class="zc-prefs-section">
+      <html:h2 class="zc-prefs-heading" data-l10n-id="prefs-connection">Connection</html:h2>
+
+      <html:label class="zc-field" for="zc-api-base-url">
+        <html:span class="zc-label" data-l10n-id="prefs-base-url">Base URL</html:span>
+        <html:input
+          id="zc-api-base-url"
+          class="zc-input"
+          type="url"
+          spellcheck="false"
+          autocomplete="off"
+          preference="__prefsPrefix__.apiBaseUrl"
+        />
+        <html:span class="zc-hint" data-l10n-id="prefs-base-url-hint">
+          Example: https://api.deepseek.com — /chat/completions is appended.
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-api-key">
+        <html:span class="zc-label" data-l10n-id="prefs-api-key">API key</html:span>
+        <html:input
+          id="zc-api-key"
+          class="zc-input"
+          type="password"
+          spellcheck="false"
+          autocomplete="off"
+          preference="__prefsPrefix__.apiKey"
+        />
+        <html:span class="zc-hint" data-l10n-id="prefs-api-key-hint">
+          Stored in this Zotero profile. Sent only to the endpoint above.
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-model">
+        <html:span class="zc-label" data-l10n-id="prefs-model">Model</html:span>
+        <html:input
+          id="zc-model"
+          class="zc-input"
+          type="text"
+          spellcheck="false"
+          autocomplete="off"
+          preference="__prefsPrefix__.model"
+        />
+        <html:span class="zc-hint" data-l10n-id="prefs-model-hint">
+          Example: deepseek-flash
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-reply-language">
+        <html:span class="zc-label" data-l10n-id="prefs-language">Preferred language</html:span>
+        <html:select
+          id="zc-reply-language"
+          class="zc-input"
+          preference="__prefsPrefix__.replyLanguage"
+        >
+          <html:option value="zh-CN">简体中文</html:option>
+          <html:option value="zh-TW">繁體中文</html:option>
+          <html:option value="en">English</html:option>
+          <html:option value="ja">日本語</html:option>
+          <html:option value="ko">한국어</html:option>
+          <html:option value="de">Deutsch</html:option>
+          <html:option value="fr">Français</html:option>
+          <html:option value="auto">Auto</html:option>
+        </html:select>
+        <html:span class="zc-hint" data-l10n-id="prefs-language-hint">
+          Shortcut prompts and answers use this language. The frozen paper prefix does not change.
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-font-size">
+        <html:span class="zc-label" data-l10n-id="prefs-font-size">Font size</html:span>
+        <html:select id="zc-font-size" class="zc-input">
+          <html:option value="12">12</html:option>
+          <html:option value="13">13</html:option>
+          <html:option value="14">14</html:option>
+          <html:option value="15">15</html:option>
+          <html:option value="16">16</html:option>
+          <html:option value="18">18</html:option>
+        </html:select>
+        <html:span class="zc-hint" data-l10n-id="prefs-font-size-hint">
+          Size of the chat panel text. Default is 14.
+        </html:span>
+      </html:label>
+
+      <html:div class="zc-actions">
+        <html:button
+          id="zc-test"
+          class="zc-btn zc-btn-primary"
+          type="button"
+          data-l10n-id="prefs-test"
+          onclick="ZoteroChat_Preferences.test()"
+        >Test connection</html:button>
+        <html:p id="zc-status" class="zc-status" data-l10n-id="prefs-status-idle"></html:p>
+      </html:div>
+    </html:section>
+  </html:div>
+</vbox>

@@ -8,12 +8,16 @@ declare namespace _ZoteroTypes {
   interface Prefs {
     PluginPrefsMap: {
       "apiBaseUrl": string;
+      "apiKey": string;
       "model": string;
+      "replyLanguage": string;
+      "fontSize": number;
       "followZoteroTheme": boolean;
       "showSelectionPopupButtons": boolean;
       "showCostBar": boolean;
       "debugDumpPayload": boolean;
       "devSeedPDF": string;
+      "devApiKeyFile": string;
       "devShowRadixProbe": boolean;
       "devShowAssistantProbe": boolean;
     };

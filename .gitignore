@@ -1,14 +1,38 @@
+# Dependencies and build output
 node_modules/
 .build/
 .scaffold/
 build/
 dist/
+*.tsbuildinfo
 *.xpi
-.DS_Store
+
+# Local env and secrets — never commit
 .env
-.env.local
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Dev fixtures (PDFs imported into the throwaway Zotero instance)
+fixtures/
+
+# Logs and OS
 *.log
+.DS_Store
+Thumbs.db
+
+# Editors / agents
 .vscode/
 .idea/
-fixtures/
-*.tsbuildinfo
+.claude/
+.grok/
+*.local
+
+# Test / coverage
+coverage/
+.nyc_output/

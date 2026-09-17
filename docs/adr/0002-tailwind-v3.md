@@ -7,11 +7,11 @@
 
 目标是同时支持 Zotero 7、8、9。它们的 Gecko 版本不同：
 
-| Zotero | Gecko |
-|---|---|
-| 7 | Firefox 115 ESR |
-| 8 | Firefox 140 ESR |
-| 9 | Firefox 140 ESR |
+| Zotero | Gecko           |
+| ------ | --------------- |
+| 7      | Firefox 115 ESR |
+| 8      | Firefox 140 ESR |
+| 9      | Firefox 140 ESR |
 
 Tailwind v4 官方要求 Safari 16.4+ / Chrome 111+ / **Firefox 128+**，主要卡在
 `@property`（Firefox 128 才支持），v4 用它给 `--tw-*` 系列变量设默认值——

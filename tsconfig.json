@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./tsconfig.plugin.json" },
-    { "path": "./tsconfig.panel.json" }
+    { "path": "./tsconfig.panel.json" },
+    { "path": "./tsconfig.prefs.json" }
   ]
 }

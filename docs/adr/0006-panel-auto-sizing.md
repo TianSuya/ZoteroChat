@@ -23,11 +23,11 @@ item pane 的 section 是**按内容高度撑开**的，所以面板必须自带
 不变量：**面板底边始终与 item pane 底边对齐**。
 
 ```ts
-room(offset) = viewport.clientHeight - max(0, offset) - chrome - GUTTER
+room(offset) = viewport.clientHeight - max(0, offset) - chrome - GUTTER;
 
-atRest    = room(contentTop)    // 滚动无关
-available = max(room(visibleTop), atRest)
-height    = max(MIN_HEIGHT, round(available))
+atRest = room(contentTop); // 滚动无关
+available = max(room(visibleTop), atRest);
+height = max(MIN_HEIGHT, round(available));
 ```
 
 ## 理由
@@ -69,10 +69,10 @@ Zotero 的 `_getMinScrollHeightForPane` 会给容器加底部 padding，让目�
 
 `dev/checkSizing.ts`，两种状态：
 
-| 状态 | scrollTop | section 距顶 | 面板高 | **底部间隙** |
-|---|---|---|---|---|
-| 静止 | 0 | 293 | 590 | **8** |
-| 滚到顶 | 293 | 0 | 882 | **8** |
+| 状态   | scrollTop | section 距顶 | 面板高 | **底部间隙** |
+| ------ | --------- | ------------ | ------ | ------------ |
+| 静止   | 0         | 293          | 590    | **8**        |
+| 滚到顶 | 293       | 0            | 882    | **8**        |
 
 底部间隙两种状态一致，不变量成立。（滚到顶时 `scrollHeight` 从 920 涨到 1213，
 正好是 Zotero 加的 padding。）

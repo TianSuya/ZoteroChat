@@ -1,6 +1,6 @@
 # 0004. 历史 append-only
 
-**状态**：已采纳（M4 实现）
+**状态**：已采纳（内存只追加；sqlite 持久化未做）
 **日期**：2026-09
 
 ## 背景
@@ -51,8 +51,13 @@
 运行时报告的 capabilities：
 
 ```json
-{ "switchToBranch": false, "edit": false, "delete": false,
-  "reload": false, "unstable_copy": true }
+{
+  "switchToBranch": false,
+  "edit": false,
+  "delete": false,
+  "reload": false,
+  "unstable_copy": true
+}
 ```
 
 注意这一项最初是用猜的 DOM 属性选择器测的，得到 0 但那是**假阳性**——选择器选不中
