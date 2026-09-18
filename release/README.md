@@ -22,16 +22,19 @@ pushes. The [Release](../.github/workflows/release.yml) workflow then:
 Do not publish from an ordinary pull request. Do not put `GITHUB_TOKEN` in
 `.env` unless you intentionally switch to local publishing.
 
-## First time
+## First time (version already in package.json)
 
-The current tree is still `0.1.8` with no GitHub Release. After this workflow
-is on `main`:
+Scaffold does **not** create a git tag when the chosen version equals
+`package.json`. It then looks up `v{version}` for the changelog and fails with
+`Tag "v0.1.8" not found`. The `release:push` hook creates and pushes that tag
+if it is missing. You can also do it yourself:
 
 ```bash
-npm run release -- 0.1.8 -y
+git tag v0.1.8
+git push origin v0.1.8
 ```
 
-Use `as-is` / `0.1.8` only for that first publish. Later releases should bump.
+Later releases should bump (`npm run release`, then pick patch/minor).
 
 ## Manual fallback
 

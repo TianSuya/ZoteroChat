@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -12,6 +13,26 @@ import pkg from "./package.json";
 /** Plugin Manager homepage and update feed. Keep in sync with package.json. */
 const GITHUB_REPO = "TianSuya/ZoteroChat";
 const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
+
+/** Scaffold skips `git tag` when the version does not change, then crashes
+ * looking up that tag for the changelog. First publish of 0.1.8 hits this. */
+function ensureReleaseTag(version: string, tagTemplate: string) {
+  const tag = tagTemplate.includes("%s")
+    ? tagTemplate.replaceAll("%s", version)
+    : tagTemplate;
+  if (!/^v\d/.test(tag)) {
+    throw new Error(`Refusing unexpected release tag: ${tag}`);
+  }
+  const tags = execSync("git tag -l --sort=v:refname", { encoding: "utf8" })
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+  if (tags.includes(tag)) return;
+  execSync(`git tag ${tag}`, { stdio: "inherit" });
+  if (!process.env.CI && !process.env.GITHUB_ACTIONS) {
+    execSync(`git push origin ${tag}`, { stdio: "inherit" });
+  }
+}
 
 const TAILWIND_ENTRY = resolve("src/ui/styles/tailwind.css");
 const VIRTUAL_ID = "virtual:panel-css";
@@ -146,6 +167,11 @@ export default defineConfig({
       enable: "ci",
       repository: GITHUB_REPO,
       updater: "release",
+    },
+    hooks: {
+      "release:push": (ctx) => {
+        ensureReleaseTag(ctx.version, String(ctx.release.bumpp.tag));
+      },
     },
   },
 
