@@ -9,6 +9,10 @@ import { defineConfig } from "zotero-plugin-scaffold";
 
 import pkg from "./package.json";
 
+/** Plugin Manager homepage and update feed. Keep in sync with package.json. */
+const GITHUB_REPO = "TianSuya/ZoteroChat";
+const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
+
 const TAILWIND_ENTRY = resolve("src/ui/styles/tailwind.css");
 const VIRTUAL_ID = "virtual:panel-css";
 
@@ -61,11 +65,10 @@ export default defineConfig({
   name: pkg.config.addonName,
   id: pkg.config.addonID,
   namespace: pkg.config.addonRef,
-  updateURL: `https://github.com/{{owner}}/{{repo}}/releases/download/release/${
+  updateURL: `${GITHUB_URL}/releases/download/release/${
     pkg.version.includes("-") ? "update-beta.json" : "update.json"
   }`,
-  xpiDownloadLink:
-    "https://github.com/{{owner}}/{{repo}}/releases/download/v{{version}}/{{xpiName}}.xpi",
+  xpiDownloadLink: `${GITHUB_URL}/releases/download/v{{version}}/{{xpiName}}.xpi`,
 
   build: {
     assets: ["addon/**/*.*"],
@@ -73,7 +76,7 @@ export default defineConfig({
       ...pkg.config,
       author: pkg.author ?? "",
       description: pkg.description,
-      homepage: pkg.homepage ?? "",
+      homepage: pkg.homepage || GITHUB_URL,
       buildVersion: pkg.version,
       buildTime: "{{buildTime}}",
     },
