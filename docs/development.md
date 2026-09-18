@@ -69,7 +69,9 @@ npm run build:production
 ```
 
 产物在 `.scaffold/build/` 下的 `.xpi`。可以拷到 `release/` 方便本地安装，但
-**不要把 `.xpi` 提交进 git**（`*.xpi` 已 ignore）。对外分发走 GitHub Releases。
+**不要把 `.xpi` 提交进 git**（`*.xpi` 已 ignore）。对外发版：`npm run release`
+（升版本、打 `v*` 标签），GitHub Actions 会上传 XPI 和 `update.json`。细节见
+[release/README.md](../release/README.md)。
 
 在自己的 Zotero 里：**工具 → 插件 → 齿轮 → 从文件安装插件…**。不要把开发用的
 `deepseek.key` 打进包——key 只在设置页填写。

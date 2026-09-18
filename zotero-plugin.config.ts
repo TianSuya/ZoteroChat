@@ -138,6 +138,17 @@ export default defineConfig({
     },
   },
 
+  release: {
+    bumpp: {
+      execute: "npm run build:production",
+    },
+    github: {
+      enable: "ci",
+      repository: GITHUB_REPO,
+      updater: "release",
+    },
+  },
+
   test: {
     waitForPlugin: `() => Zotero.${pkg.config.addonInstance}.data.initialized`,
   },
