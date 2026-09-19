@@ -18,6 +18,13 @@ export function App({ bridge }: { bridge: PanelBridge }) {
 
   useEffect(() => bridge.onThemeChange?.(setTheme), [bridge]);
   useEffect(() => bridge.onFontSizeChange?.(setFontSize), [bridge]);
+  useEffect(
+    () =>
+      bridge.onPrefsApplied?.(() => {
+        setFontSize(bridge.getFontSize());
+      }),
+    [bridge],
+  );
 
   useEffect(() => {
     const root = document.documentElement;
@@ -77,6 +84,13 @@ function ChatSession({
     bridge.getUiLanguage(),
   );
   useEffect(() => bridge.onUiLanguageChange?.(setUiLanguage), [bridge]);
+  useEffect(
+    () =>
+      bridge.onPrefsApplied?.(() => {
+        setUiLanguage(bridge.getUiLanguage());
+      }),
+    [bridge],
+  );
   useEffect(
     () => bridge.onSelectionChange?.(commitSelection),
     [bridge, commitSelection],

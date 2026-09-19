@@ -1,4 +1,3 @@
-prefs-title = ZoteroChat
 prefs-lead = OpenAI 兼容接口。当前论文会作为上下文随每次提问一起发送。
 prefs-connection = 连接
 prefs-base-url = Base URL
@@ -10,9 +9,11 @@ prefs-model-hint = 例如 deepseek-flash
 prefs-language = 优先语言
 prefs-language-hint = 快捷提问和回答使用这种语言。Auto 跟随当前问题。论文前缀不会因此改写。
 prefs-font-size = 字体大小
-prefs-font-size-hint = 对话窗口正文字号。默认 14。
+prefs-font-size-hint = 对话窗口正文字号。默认 14。改完后点「保存并刷新」。
+prefs-apply = 保存并刷新
 prefs-test = 测试连接
 prefs-status-idle = 尚未测试
+prefs-status-applied = 已保存并刷新对话
 prefs-status-checking = 正在检查…
 prefs-status-ok = 已连接 · { $model }
 prefs-status-fail = 无法连接 · { $detail }

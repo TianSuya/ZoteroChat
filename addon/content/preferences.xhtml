@@ -3,7 +3,6 @@
 </linkset>
 <vbox onload="ZoteroChat_Preferences.init()">
   <html:div id="zoterochat-preferences" class="zc-prefs">
-    <html:h1 class="zc-prefs-title" data-l10n-id="prefs-title">ZoteroChat</html:h1>
     <html:p class="zc-prefs-lead" data-l10n-id="prefs-lead">
       OpenAI-compatible endpoint. The current paper is sent as context with every question.
     </html:p>
@@ -94,12 +93,19 @@
 
       <html:div class="zc-actions">
         <html:button
-          id="zc-test"
+          id="zc-apply"
           class="zc-btn zc-btn-primary"
+          type="button"
+          data-l10n-id="prefs-apply"
+          onclick="ZoteroChat_Preferences.apply()"
+        >保存并刷新</html:button>
+        <html:button
+          id="zc-test"
+          class="zc-btn"
           type="button"
           data-l10n-id="prefs-test"
           onclick="ZoteroChat_Preferences.test()"
-        >Test connection</html:button>
+        >测试连接</html:button>
         <html:p id="zc-status" class="zc-status" data-l10n-id="prefs-status-idle"></html:p>
       </html:div>
     </html:section>

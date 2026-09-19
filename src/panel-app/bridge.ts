@@ -52,6 +52,8 @@ export interface PanelBridge {
   onUiLanguageChange?: (listener: (lang: UiLanguage) => void) => () => void;
   getFontSize: () => number;
   onFontSizeChange?: (listener: (size: number) => void) => () => void;
+  /** Settings "Apply" — re-read prefs without tearing down the conversation. */
+  onPrefsApplied?: (listener: () => void) => () => void;
   /** Live PDF selection for this attachment. */
   getSelection: () => BridgeSelection | null;
   /** Drop the current highlight from this turn's context until the user selects again. */

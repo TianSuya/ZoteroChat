@@ -21,6 +21,7 @@ class Addon {
         model?: string;
       }>;
       clearSecretCache: () => void;
+      applyToPanels: () => void;
       openPreferences: () => void;
     };
   };

@@ -5,6 +5,7 @@
  * *before* the XHTML fragment is inserted. Init therefore waits for the
  * fragment (vbox onload + a ready check). The test button also has an
  * `onclick` so a click still works if init lost the race.
+ * Apply flushes fields and asks open chat panels to re-read prefs.
  */
 import { config } from "../../package.json";
 
@@ -18,6 +19,7 @@ type AddonApi = {
     model?: string;
   }>;
   clearSecretCache: () => void;
+  applyToPanels: () => void;
 };
 
 function api(): AddonApi | undefined {
@@ -73,6 +75,13 @@ function flushFields() {
   if (fontSize) {
     Zotero.Prefs.set(`${PREFIX}.fontSize`, Number(fontSize.value), true);
   }
+}
+
+function apply() {
+  flushFields();
+  api()?.clearSecretCache();
+  api()?.applyToPanels();
+  setStatus("ok", "status-applied");
 }
 
 async function test() {
@@ -134,12 +143,15 @@ function init() {
     });
   }
 
+  el<HTMLButtonElement>("zc-apply")?.addEventListener("click", () => {
+    apply();
+  });
   el<HTMLButtonElement>("zc-test")?.addEventListener("click", () => {
     void test();
   });
 }
 
-const ZoteroChat_Preferences = { init, test };
+const ZoteroChat_Preferences = { init, test, apply };
 const root = typeof window !== "undefined" ? window : globalThis;
 (
   root as unknown as { ZoteroChat_Preferences: typeof ZoteroChat_Preferences }

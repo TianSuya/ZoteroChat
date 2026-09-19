@@ -126,6 +126,9 @@ token（`addon/content/preferences.css`）。API key 存在当前 profile 的 pr
 设置页脚本可能早于片段 DOM，必须 `vbox onload` + 按钮 `onclick`，见
 [environment.md §8](environment.md#八设置页脚本早于片段-dom)。`<select>` 去掉原生
 箭头、自绘 chevron，见 [environment.md §10](environment.md#十设置页-select-原生箭头会被圆角裁掉)。
+「应用」会 `flush` 全部字段并 `notifyPrefsApplied`；观察 `fontSize` /
+`replyLanguage` 时 `registerObserver` 必须传 `global: true`，与
+`Zotero.Prefs.set(..., true)` 同一条分支。
 
 ## 已落地的集成
 

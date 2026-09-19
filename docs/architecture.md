@@ -85,6 +85,7 @@ interface PanelBridge {
   onUiLanguageChange?: (listener) => () => void;
   getFontSize: () => number;
   onFontSizeChange?: (listener) => () => void;
+  onPrefsApplied?: (listener) => () => void;
   getSelection: () => BridgeSelection | null;
   dismissSelection: () => void;
   onSelectionChange?: (listener) => () => void;

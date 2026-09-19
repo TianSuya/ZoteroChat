@@ -22,6 +22,7 @@ export function onUiLanguageChange(
   const symbol = Zotero.Prefs.registerObserver(
     `${config.prefsPrefix}.replyLanguage`,
     () => listener(readUiLanguage()),
+    true,
   );
   return () => Zotero.Prefs.unregisterObserver(symbol);
 }
@@ -36,6 +37,18 @@ export function onFontSizeChange(listener: (size: number) => void): () => void {
   const symbol = Zotero.Prefs.registerObserver(
     `${config.prefsPrefix}.fontSize`,
     () => listener(readFontSize()),
+    true,
   );
   return () => Zotero.Prefs.unregisterObserver(symbol);
+}
+
+const appliedListeners = new Set<() => void>();
+
+export function onPrefsApplied(listener: () => void): () => void {
+  appliedListeners.add(listener);
+  return () => appliedListeners.delete(listener);
+}
+
+export function notifyPrefsApplied(): void {
+  for (const listener of appliedListeners) listener();
 }

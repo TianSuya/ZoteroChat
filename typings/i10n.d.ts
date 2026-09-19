@@ -11,6 +11,7 @@ export type FluentMessageId =
   | 'panel-sidenav-tooltip'
   | 'prefs-api-key'
   | 'prefs-api-key-hint'
+  | 'prefs-apply'
   | 'prefs-base-url'
   | 'prefs-base-url-hint'
   | 'prefs-connection'
@@ -21,9 +22,9 @@ export type FluentMessageId =
   | 'prefs-lead'
   | 'prefs-model'
   | 'prefs-model-hint'
+  | 'prefs-status-applied'
   | 'prefs-status-checking'
   | 'prefs-status-fail'
   | 'prefs-status-idle'
   | 'prefs-status-ok'
-  | 'prefs-test'
-  | 'prefs-title';
+  | 'prefs-test';

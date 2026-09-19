@@ -1,4 +1,5 @@
 import { config } from "../../package.json";
+import { notifyPrefsApplied } from "../i18n/prefs";
 import { clearSecretCache, testConnection } from "../llm/session";
 import { seedApiKeyFromDevFile } from "../llm/secrets";
 
@@ -17,6 +18,7 @@ export async function registerPreferencePane() {
   addon.data.api = {
     testConnection,
     clearSecretCache,
+    applyToPanels: notifyPrefsApplied,
     openPreferences,
   };
   ztoolkit.log("registered preferences pane", id);

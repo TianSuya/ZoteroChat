@@ -1,4 +1,3 @@
-prefs-title = ZoteroChat
 prefs-lead = OpenAI-compatible endpoint. The current paper is sent as context with every question.
 prefs-connection = Connection
 prefs-base-url = Base URL
@@ -10,9 +9,11 @@ prefs-model-hint = Example: deepseek-flash
 prefs-language = Preferred language
 prefs-language-hint = Shortcut prompts and answers use this language. Auto follows the question. The frozen paper prefix does not change.
 prefs-font-size = Font size
-prefs-font-size-hint = Chat panel text size. Default is 14.
+prefs-font-size-hint = Chat panel text size. Default is 14. Click Save and refresh afterward.
+prefs-apply = Save and refresh
 prefs-test = Test connection
 prefs-status-idle = Not tested yet
+prefs-status-applied = Saved and chat refreshed
 prefs-status-checking = Checking…
 prefs-status-ok = Connected · { $model }
 prefs-status-fail = Couldn’t connect · { $detail }

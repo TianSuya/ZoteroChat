@@ -132,6 +132,7 @@ header 右侧：有消息时 hover 出「新对话」；齿轮始终可见，打
 - API key 用原生 `type="password"`（系统眼睛），不要再叠 Show。
 - 「优先语言」「字体大小」是 `<select>`：去掉原生箭头、自绘 chevron，否则圆角会裁掉箭头。
 - 字号写入 `--zc-font-size`，面板 `documentElement` 的 `fontSize` 同步，对话用 rem 相对缩放。
+- 「保存并刷新」把当前表单写入 prefs 并通知已打开的面板重读字号/语言，**不拆掉会话**。测试连接仍是另一颗按钮。按钮是 `zc-actions` 的直接子节点，避免 XUL 里嵌套 flex 把控件挤没。
 
 ## 阅读器「解释选区」按钮
 

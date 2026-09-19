@@ -1,6 +1,7 @@
 import { config } from "../../package.json";
 import {
   onFontSizeChange,
+  onPrefsApplied,
   onUiLanguageChange,
   readFontSize,
   readUiLanguage,
@@ -157,6 +158,7 @@ export function registerPanelSection() {
         onUiLanguageChange,
         getFontSize: readFontSize,
         onFontSizeChange,
+        onPrefsApplied,
         getSelection: () => getSelection(itemID),
         dismissSelection: () => dismissSelection(itemID),
         onSelectionChange: (listener) =>
