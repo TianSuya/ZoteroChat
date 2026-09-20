@@ -152,6 +152,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/d
 
 Upcoming work includes persistent conversations, long-document compression, and export to Zotero notes. Track implementation status in the [roadmap](docs/roadmap.md).
 
+## Contributors
+
+- [TianSuya](https://github.com/TianSuya)
+- [shawnliang420](https://github.com/shawnliang420)
+
 ## License
 
 ZoteroChat's original code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). It is **source-available**, rather than open source under the [OSI definition](https://opensource.org/osd), because it restricts commercial use.

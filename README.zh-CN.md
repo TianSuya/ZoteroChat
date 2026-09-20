@@ -152,6 +152,11 @@ npm run build:production   # 生产 XPI
 
 后续工作包括对话持久化、长文压缩和导出 Zotero 笔记，具体进度见[路线图](docs/roadmap.md)。
 
+## 贡献者
+
+- [TianSuya](https://github.com/TianSuya)
+- [shawnliang420](https://github.com/shawnliang420)
+
 ## 许可证
 
 ZoteroChat 的原创代码采用 [PolyForm Noncommercial License 1.0.0](LICENSE.md)。由于限制商业使用，项目属于 **源码可用（source-available）**，不属于 [OSI 定义的开源软件](https://opensource.org/osd)。
