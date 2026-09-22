@@ -6,7 +6,12 @@ import {
   readFontSize,
   readUiLanguage,
 } from "../i18n/prefs";
-import { beginConversation, streamTurn } from "../llm/session";
+import {
+  beginAside,
+  beginConversation,
+  streamAsideTurn,
+  streamTurn,
+} from "../llm/session";
 import { openPreferences } from "../prefs/register";
 import {
   dismissSelection,
@@ -170,6 +175,9 @@ export function registerPanelSection() {
             if (id === itemID) listener(sel);
           }),
         streamTurn: (req, handlers) => streamTurn(itemID, req, handlers),
+        beginAside: (req) => beginAside(itemID, req),
+        streamAsideTurn: (req, handlers) =>
+          streamAsideTurn(itemID, req.asideId, req, handlers),
       });
 
       frames.set(el, { frame, itemID });

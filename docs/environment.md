@@ -327,3 +327,33 @@ for (const node of Array.from(parsed.body.childNodes)) {
 - 发送只读 `selectionRef.current`，**禁止** `getSelection() ?? bridge.getSelection()`。
 
 见 [adr/0008](adr/0008-selection-suffix.md)。
+
+---
+
+## 十二、划词弹窗整块消失（译文和「解释选区」一起没了）
+
+`renderTextSelectionPopup` 的回调跑在**插件 bootstrap 沙箱**里。沙箱没有完整 DOM 全局。
+在这里 `new AbortController()` 会直接抛错，后面的 `event.append` 根本跑不到——
+于是译文框和「解释选区」按钮一起消失，阅读器只剩 Zotero 自己的颜色条。
+
+解法：
+
+- `AbortController` 从**主窗口**取：`(Zotero.getMainWindow() as any).AbortController`。
+- 先造好「解释选区」按钮；译文框放进 `try`。失败只记日志，按钮仍 `append`。
+- `translateSelection` 的 Promise 必须 `.catch`，避免未处理拒绝。
+- `fetch` 仍走主窗口（与 Chat Completions 相同）。
+
+成熟做法（对照常见 PDF 翻译插件）：译文用 **textarea**（`resize: both`，记住宽高），
+不要用不可缩放的 `div`。指针事件在 textarea 上 `stopPropagation`，避免拖拽时弹窗被关掉。
+
+---
+
+## 十三、Tooltip / 弹出层透出正文
+
+Radix 的 Tooltip、Popover 默认 portal 到 iframe 的 `document.body`，在 `#zc-root` **外面**。
+`--zc-surface-raised` 只写在 `.zc-root` 上时，浮层的 `var(--zc-surface-raised)` 是空的，
+背景等于没涂，hover 再用半透明的 `--fill-quinary`，底下的字会叠上来。
+
+解法：在 `html` / `html[data-zc-theme="dark"]` 上也定义同一套 token；浮层加
+`.zc-portal.zc-float`，hover 只调不透明底的亮度，不要换成半透明 fill。划词条
+`.zc-ask-aside-chip` 同一原则。

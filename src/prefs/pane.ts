@@ -75,6 +75,24 @@ function flushFields() {
   if (fontSize) {
     Zotero.Prefs.set(`${PREFIX}.fontSize`, Number(fontSize.value), true);
   }
+  const engine = el<HTMLSelectElement>("zc-translate-engine");
+  if (engine) setPref("translateEngine", engine.value);
+  const deepl = el<HTMLInputElement>("zc-translate-deepl-key");
+  if (deepl) setPref("translateDeeplKey", deepl.value.trim());
+  const gcloud = el<HTMLInputElement>("zc-translate-google-cloud-key");
+  if (gcloud) setPref("translateGoogleCloudKey", gcloud.value.trim());
+  const azure = el<HTMLInputElement>("zc-translate-azure-key");
+  if (azure) setPref("translateAzureKey", azure.value.trim());
+  const region = el<HTMLInputElement>("zc-translate-azure-region");
+  if (region) setPref("translateAzureRegion", region.value.trim() || "global");
+  const translateFont = el<HTMLSelectElement>("zc-translate-font-size");
+  if (translateFont) {
+    Zotero.Prefs.set(
+      `${PREFIX}.translateFontSize`,
+      Number(translateFont.value),
+      true,
+    );
+  }
 }
 
 function apply() {
@@ -140,6 +158,39 @@ function init() {
     fontSize.value = String(Number.isFinite(n) ? n : 14);
     fontSize.addEventListener("change", () => {
       Zotero.Prefs.set(`${PREFIX}.fontSize`, Number(fontSize.value), true);
+    });
+  }
+
+  const engine = el<HTMLSelectElement>("zc-translate-engine");
+  if (engine) {
+    engine.value = pref("translateEngine") || "google";
+    engine.addEventListener("change", () =>
+      setPref("translateEngine", engine.value),
+    );
+  }
+  for (const [id, key] of [
+    ["zc-translate-deepl-key", "translateDeeplKey"],
+    ["zc-translate-google-cloud-key", "translateGoogleCloudKey"],
+    ["zc-translate-azure-key", "translateAzureKey"],
+    ["zc-translate-azure-region", "translateAzureRegion"],
+  ] as const) {
+    const input = el<HTMLInputElement>(id);
+    if (!input) continue;
+    input.value = pref(key);
+    input.addEventListener("change", () => setPref(key, input.value.trim()));
+    input.addEventListener("blur", () => setPref(key, input.value.trim()));
+  }
+
+  const translateFont = el<HTMLSelectElement>("zc-translate-font-size");
+  if (translateFont) {
+    const n = Number(Zotero.Prefs.get(`${PREFIX}.translateFontSize`, true));
+    translateFont.value = String(Number.isFinite(n) ? n : 14);
+    translateFont.addEventListener("change", () => {
+      Zotero.Prefs.set(
+        `${PREFIX}.translateFontSize`,
+        Number(translateFont.value),
+        true,
+      );
     });
   }
 

@@ -20,7 +20,8 @@
 ## Features
 
 - **Discuss the current paper.** Start with a summary, methods, limitations, or key terms, then ask follow-up questions.
-- **Ask about a passage.** Highlight text to attach it to your next question, or choose **Explain selection** in the reader popup.
+- **Ask about a passage.** Highlight text to attach it to your next question, or choose **Explain selection** in the reader popup. The same popup can show a translation of the selection.
+- **Follow up on an answer without scrolling away.** **Ask about selection** opens a short overlay on the main thread, then returns you to the same place.
 - **Read formatted answers.** Responses stream into the sidebar with Markdown and LaTeX equations.
 - **Choose your reading preferences.** Set the reply language and text size, and use `/` for quick prompts.
 - **Inspect token usage.** See input/output tokens and cache hits when the provider returns them.

@@ -5,6 +5,14 @@ pref("__prefsPrefix__.replyLanguage", "zh-CN");
 pref("__prefsPrefix__.fontSize", 14);
 pref("__prefsPrefix__.followZoteroTheme", true);
 pref("__prefsPrefix__.showSelectionPopupButtons", true);
+pref("__prefsPrefix__.translateEngine", "google");
+pref("__prefsPrefix__.translateDeeplKey", "");
+pref("__prefsPrefix__.translateGoogleCloudKey", "");
+pref("__prefsPrefix__.translateAzureKey", "");
+pref("__prefsPrefix__.translateAzureRegion", "global");
+pref("__prefsPrefix__.translateFontSize", 14);
+pref("__prefsPrefix__.translatePopupWidth", 280);
+pref("__prefsPrefix__.translatePopupHeight", 96);
 pref("__prefsPrefix__.showCostBar", true);
 pref("__prefsPrefix__.debugDumpPayload", false);
 

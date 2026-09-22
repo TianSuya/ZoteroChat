@@ -1,5 +1,5 @@
 import type { ReplyLanguage } from "../i18n/languages";
-import { turnDirectivesFor } from "../i18n/directives";
+import { asideTurnDirective, turnDirectivesFor } from "../i18n/directives";
 import { ACK_TEXT, SYSTEM_PROMPT } from "./prompts";
 import type { ChatMessage, Selection } from "./types";
 
@@ -14,20 +14,27 @@ export function buildCurrentUserMessage(
   question: string,
   selection: Selection | null | undefined,
   language: ReplyLanguage,
+  asideQuote?: string | null,
 ): string {
   const parts: string[] = [];
   // Directives first so the language lock is not buried after a long
   // question. This is still the suffix of the request, so the frozen
   // paper prefix stays byte-identical.
-  parts.push(
-    `<turn-directives>\n${turnDirectivesFor(language)}\n</turn-directives>`,
-  );
+  const directives = [turnDirectivesFor(language)];
+  const quote = asideQuote?.trim();
+  if (quote) directives.push(asideTurnDirective());
+  parts.push(`<turn-directives>\n${directives.join(" ")}\n</turn-directives>`);
   const sel = selection?.text.trim();
   if (sel) {
     const page =
       selection?.page != null ? ` page="${String(selection.page)}"` : "";
     parts.push(
       `<selection${page}>\nUSER_SELECTED_PASSAGE (current PDF highlight, not the full paper)\n${sel}\n</selection>`,
+    );
+  }
+  if (quote) {
+    parts.push(
+      `<aside-quote>\nPASSAGE_FROM_MAIN_CONVERSATION\n${quote}\n</aside-quote>`,
     );
   }
   parts.push(`<question>\n${question.trim()}\n</question>`);
@@ -48,6 +55,7 @@ export function buildRequestMessages(opts: {
   question: string;
   selection?: Selection | null;
   language: ReplyLanguage;
+  asideQuote?: string | null;
 }): ChatMessage[] {
   return [
     ...opts.prefix,
@@ -58,6 +66,7 @@ export function buildRequestMessages(opts: {
         opts.question,
         opts.selection,
         opts.language,
+        opts.asideQuote,
       ),
     },
   ];

@@ -27,6 +27,7 @@
     "src/llm/**/*.ts",
     "src/prefs/register.ts",
     "src/reader/**/*.ts",
+    "src/translate/**/*.ts",
     "src/dev/seed.ts",
     "src/utils/ztoolkit.ts",
     "src/panel-app/bridge.ts",

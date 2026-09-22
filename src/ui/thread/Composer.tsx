@@ -57,9 +57,11 @@ function SelectionBanner({
 export function Composer({
   selection,
   onClearSelection,
+  placeholder,
 }: {
   selection?: SelectionChip | null;
   onClearSelection?: () => void;
+  placeholder?: string;
 }) {
   const copy = usePanelCopy();
   return (
@@ -84,9 +86,10 @@ export function Composer({
           autoFocus
           submitMode="enter"
           placeholder={
-            selection
+            placeholder ??
+            (selection
               ? copy.composerPlaceholderSelection
-              : copy.composerPlaceholder
+              : copy.composerPlaceholder)
           }
           className="max-h-40 min-h-[24px] flex-1 resize-none bg-transparent py-0.5 text-base text-fg outline-none placeholder:text-fg-faint"
         />

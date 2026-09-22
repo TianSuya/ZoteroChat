@@ -13,7 +13,11 @@ import { SafeHtml } from "./SafeHtml";
  * While the token stream is still running, markdown+KaTeX is throttled so a
  * half-open $$ block is not re-parsed on every character.
  */
-export function MarkdownText() {
+export function MarkdownText({
+  onReady,
+}: {
+  onReady?: (node: HTMLElement) => void;
+} = {}) {
   const part = useMessagePartText();
   const text = part.text;
   const running = part.status.type === "running";
@@ -29,5 +33,12 @@ export function MarkdownText() {
   }, [text, running]);
 
   const html = useMemo(() => renderMarkdown(shown), [shown]);
-  return <SafeHtml className="zc-md" html={html} fallback={shown} />;
+  return (
+    <SafeHtml
+      className="zc-md"
+      html={html}
+      fallback={shown}
+      onReady={onReady}
+    />
+  );
 }

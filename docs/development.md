@@ -224,6 +224,11 @@ XHTML `innerHTML` + MathML → `InvalidCharacterError`；`importNode` 死循环�
 不要把语言写进冻结的 system。见 `src/i18n/directives.ts` 与
 [adr/0003](adr/0003-prefix-freeze.md)。
 
+### 划词后没有译文、也没有「解释选区」
+
+插件沙箱里不要 `new AbortController()`。日志搜 `translate popup failed`。
+Google 被拦时弹窗应显示失败原因而不是整块空白；设置里可换 DeepL / Azure / 对话模型。
+
 ### 叉掉「选中内容」后模型仍看到那段
 
 发送不能回落到阅读器 live 选区。见

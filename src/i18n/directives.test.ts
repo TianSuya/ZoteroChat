@@ -18,4 +18,20 @@ describe("turnDirectivesFor", () => {
     expect(dir).toBeGreaterThanOrEqual(0);
     expect(q).toBeGreaterThan(dir);
   });
+
+  it("keeps the language lock before an aside quote", () => {
+    const msg = buildCurrentUserMessage(
+      "这个词是什么？",
+      null,
+      "zh-CN",
+      "Foobar",
+    );
+    const dir = msg.indexOf("<turn-directives>");
+    const quote = msg.indexOf("<aside-quote>");
+    const q = msg.indexOf("<question>");
+    expect(dir).toBeGreaterThanOrEqual(0);
+    expect(quote).toBeGreaterThan(dir);
+    expect(q).toBeGreaterThan(quote);
+    expect(msg).toMatch(/brief aside/);
+  });
 });

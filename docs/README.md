@@ -25,7 +25,7 @@ Zotero 侧边栏论文阅读助手。以打开的 PDF 附件为会话边界，�
 | [environment.md](environment.md)               | Zotero 运行环境的约束与坑。踩过的每一个都在这里         |
 | [development.md](development.md)               | 构建管线、开发回路、探针、常见问题排查                  |
 | [ui.md](ui.md)                                 | Notion 设计规则、设计 token、主题桥接、组件层约定       |
-| [zotero-integration.md](zotero-integration.md) | section 注册、本地化、图标、设置页、划词                |
+| [zotero-integration.md](zotero-integration.md) | section 注册、本地化、图标、设置页、划词与弹窗翻译      |
 | [roadmap.md](roadmap.md)                       | 里程碑状态与未完成项                                    |
 | [changelog.md](changelog.md)                   | 版本更新记录                                            |
 | [screenshots/](screenshots/)                   | README 截图、原图与更新约定                             |

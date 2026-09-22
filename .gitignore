@@ -36,3 +36,6 @@ Thumbs.db
 # Test / coverage
 coverage/
 .nyc_output/
+
+# Local publish helper (never commit)
+/release.sh

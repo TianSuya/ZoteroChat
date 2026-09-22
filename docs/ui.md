@@ -109,11 +109,23 @@ header 右侧：有消息时 hover 出「新对话」；齿轮始终可见，打
 
 用户消息里同样渲染「选中内容」块（`encodeUserContent` / `parseUserContent`），避免只有模型看得见。
 
+## 针对选段提问（副对话）
+
+针对主对话里已经出现的内容短问，避免把主时间线拉长。见 [adr/0009](adr/0009-aside-overlay.md)。
+
+- 助手消息划词，或 hover 操作条的「针对选段提问」。划词条、Tooltip、弹出列表都用 `.zc-float` / `.zc-ask-aside-chip` 不透明底。
+- 从划词创建的副对话会在原文下加下划线；单击下划线打开该副对话，拖拽仍可复制。整段提问不加下划线。
+- overlay 盖住主对话（`bg-surface`，120ms 淡入，无位移）。顶栏 `← 正文`，Esc 等同。
+- 顶部钉住引用来源；composer 占位符「针对这段提问…」。
+- 主对话不追加消息、不滚动。关闭后仍停在离开时的位置。
+- 主消息上留「针对选段提问 · N」标记，点开回到同一条副对话。副对话里不再开副对话。
+- 「新对话」会清掉该论文下全部副对话。
+
 ## 组件清单
 
 已落地（`src/ui/components/`）：`button` `tooltip` `popover` `dropdown-menu` `command`
 
-已落地（`src/ui/thread/`）：`Welcome` `UserMessage` `AssistantMessage` `Composer` `SlashMenu` `CostBar`
+已落地（`src/ui/thread/`）：`Welcome` `UserMessage` `AssistantMessage` `Composer` `SlashMenu` `CostBar` `AsideOverlay`
 
 助手消息走 `src/ui/markdown/`：markdown-it（`html: false`）+ KaTeX MathML（`$…$` / `$$…$$` / `\(…\)` / `\[…\]`）。**禁止 `dangerouslySetInnerHTML`**，见 [adr/0007](adr/0007-xhtml-html-inject.md)。独立公式容器 `.zc-md-eq` 下方留白给细滚动条，避免压住字形。
 
@@ -139,6 +151,8 @@ header 右侧：有消息时 hover 出「新对话」；齿轮始终可见，打
 按钮插在 `renderTextSelectionPopup` 的 reader 文档里，吃不到面板 Tailwind。
 样式必须 inline：`padding: 6px 12px`、`min-height: 28px`、`line-height: 18px`、
 `width: 100%`。过小会贴边。见 [adr/0008](adr/0008-selection-suffix.md)。
+
+同一弹窗在按钮上方用可缩放 textarea 显示译文（右下角拖拽改大小，A− / A+ 改字号）。默认 Google；设置「翻译」一节可换引擎、API key 和默认字号。目标语言 = 优先语言。构建失败时仍会保留「解释选区」。
 
 尚未做的组件：`scroll-area` `separator` `skeleton` `switch` `select`。
 

@@ -91,6 +91,92 @@
         </html:span>
       </html:label>
 
+    </html:section>
+
+    <html:section class="zc-prefs-section">
+      <html:h2 class="zc-prefs-heading" data-l10n-id="prefs-translate">Translation</html:h2>
+      <html:p class="zc-hint" data-l10n-id="prefs-translate-lead">
+        Shown in the PDF selection popup. Target language follows Preferred language above.
+      </html:p>
+
+      <html:label class="zc-field" for="zc-translate-engine">
+        <html:span class="zc-label" data-l10n-id="prefs-translate-engine">Engine</html:span>
+        <html:select id="zc-translate-engine" class="zc-input">
+          <html:option value="google">Google</html:option>
+          <html:option value="deepl">DeepL</html:option>
+          <html:option value="google-cloud">Google Cloud Translation</html:option>
+          <html:option value="azure">Azure Translator</html:option>
+          <html:option value="chat-model">Chat model</html:option>
+        </html:select>
+        <html:span class="zc-hint" data-l10n-id="prefs-translate-engine-hint">
+          Google needs no key. Chat model uses the connection settings above.
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-translate-deepl-key">
+        <html:span class="zc-label" data-l10n-id="prefs-translate-deepl-key">DeepL API key</html:span>
+        <html:input
+          id="zc-translate-deepl-key"
+          class="zc-input"
+          type="password"
+          spellcheck="false"
+          autocomplete="off"
+        />
+      </html:label>
+
+      <html:label class="zc-field" for="zc-translate-google-cloud-key">
+        <html:span class="zc-label" data-l10n-id="prefs-translate-google-cloud-key">Google Cloud API key</html:span>
+        <html:input
+          id="zc-translate-google-cloud-key"
+          class="zc-input"
+          type="password"
+          spellcheck="false"
+          autocomplete="off"
+        />
+      </html:label>
+
+      <html:label class="zc-field" for="zc-translate-azure-key">
+        <html:span class="zc-label" data-l10n-id="prefs-translate-azure-key">Azure Translator key</html:span>
+        <html:input
+          id="zc-translate-azure-key"
+          class="zc-input"
+          type="password"
+          spellcheck="false"
+          autocomplete="off"
+        />
+      </html:label>
+
+      <html:label class="zc-field" for="zc-translate-azure-region">
+        <html:span class="zc-label" data-l10n-id="prefs-translate-azure-region">Azure region</html:span>
+        <html:input
+          id="zc-translate-azure-region"
+          class="zc-input"
+          type="text"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <html:span class="zc-hint" data-l10n-id="prefs-translate-azure-region-hint">
+          Default global. Only used by Azure Translator.
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-translate-font-size">
+        <html:span class="zc-label" data-l10n-id="prefs-translate-font-size">Translation font size</html:span>
+        <html:select id="zc-translate-font-size" class="zc-input">
+          <html:option value="12">12</html:option>
+          <html:option value="13">13</html:option>
+          <html:option value="14">14</html:option>
+          <html:option value="15">15</html:option>
+          <html:option value="16">16</html:option>
+          <html:option value="18">18</html:option>
+          <html:option value="20">20</html:option>
+          <html:option value="22">22</html:option>
+        </html:select>
+        <html:span class="zc-hint" data-l10n-id="prefs-translate-font-size-hint">
+          Size of the translated text in the PDF selection popup. You can also use A− / A+ on the popup.
+        </html:span>
+      </html:label>
+
       <html:div class="zc-actions">
         <html:button
           id="zc-apply"

@@ -20,6 +20,15 @@ function lockLanguage(englishName: string, nativeName: string): string {
   ].join(" ");
 }
 
+/** Suffix-only. Tells the model this turn is a brief aside, not a new paper. */
+export function asideTurnDirective(): string {
+  return [
+    "This is a brief aside about the quoted passage from the main conversation.",
+    "Answer that local question directly.",
+    "Do not recap the whole paper.",
+  ].join(" ");
+}
+
 export function turnDirectivesFor(language: ReplyLanguage): string {
   switch (language) {
     case "zh-CN":

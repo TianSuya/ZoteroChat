@@ -27,4 +27,15 @@ export type FluentMessageId =
   | 'prefs-status-fail'
   | 'prefs-status-idle'
   | 'prefs-status-ok'
-  | 'prefs-test';
+  | 'prefs-test'
+  | 'prefs-translate'
+  | 'prefs-translate-azure-key'
+  | 'prefs-translate-azure-region'
+  | 'prefs-translate-azure-region-hint'
+  | 'prefs-translate-deepl-key'
+  | 'prefs-translate-engine'
+  | 'prefs-translate-engine-hint'
+  | 'prefs-translate-font-size'
+  | 'prefs-translate-font-size-hint'
+  | 'prefs-translate-google-cloud-key'
+  | 'prefs-translate-lead';

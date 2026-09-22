@@ -17,6 +17,19 @@ body,
 
 html {
   font-size: var(--zc-font-size, 14px);
+  /* Portals mount on body, outside `.zc-root`. Keep float tokens here so
+     tooltips/popovers inherit an opaque raised surface. */
+  --zc-surface-raised: #ffffff;
+  --zc-border: #e9e9e7;
+  --zc-fg: #37352f;
+  --zc-fg-muted: #6f6e69;
+}
+
+html[data-zc-theme="dark"] {
+  --zc-surface-raised: #2b2b2b;
+  --zc-border: #373737;
+  --zc-fg: #e6e6e4;
+  --zc-fg-muted: #9b9a97;
 }
 
 body {
@@ -136,6 +149,81 @@ body {
 }
 .zc-scroll:hover {
   scrollbar-color: var(--zc-fg-faint) transparent;
+}
+
+/* Aside overlay sits on the main thread. Opacity only, 120ms budget. */
+.zc-aside-overlay {
+  animation: zc-aside-in 120ms ease;
+}
+@keyframes zc-aside-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * Selection chip over assistant text. Must stay opaque on hover —
+ * `--zc-surface-hover` is often a translucent Zotero fill and would
+ * let the highlighted glyphs show through the label.
+ */
+.zc-ask-aside-chip {
+  display: inline-flex;
+  isolation: isolate;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--zc-border);
+  border-radius: 4px;
+  background-color: var(--zc-surface-raised);
+  color: var(--zc-fg);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.zc-ask-aside-chip:hover {
+  background-color: var(--zc-surface-raised);
+  filter: brightness(0.97);
+}
+.zc-root[data-zc-theme="dark"] .zc-ask-aside-chip:hover {
+  filter: brightness(1.12);
+}
+
+/* Tooltips, popovers, menus — same opaque chip language. */
+.zc-float {
+  isolation: isolate;
+  background-color: var(--zc-surface-raised, #ffffff);
+  color: var(--zc-fg, #37352f);
+  border: 1px solid var(--zc-border, #e9e9e7);
+}
+.zc-float-item {
+  background-color: transparent;
+  color: var(--zc-fg, #37352f);
+}
+.zc-float-item:hover {
+  background-color: var(--zc-surface-raised, #ffffff);
+  filter: brightness(0.97);
+}
+html[data-zc-theme="dark"] .zc-float-item:hover {
+  filter: brightness(1.12);
+}
+
+/* Quoted passage that already has an aside. Click opens it; drag still selects. */
+.zc-aside-quote {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--zc-accent, #2383e2);
+  cursor: pointer;
+}
+.zc-aside-quote:hover {
+  text-decoration-thickness: 2px;
 }
 
 /* Notion's hover-reveal: actions stay out of the way until you reach for them. */

@@ -12,6 +12,7 @@
 | [0006](0006-panel-auto-sizing.md) | 面板高度自适应 item pane           | 已采纳                                                        |
 | [0007](0007-xhtml-html-inject.md) | XHTML 面板禁止 innerHTML 灌 MathML | 已采纳                                                        |
 | [0008](0008-selection-suffix.md)  | 选区只属当前轮，芯片是发送真相     | 已采纳                                                        |
+| [0009](0009-aside-overlay.md)     | 副对话是主对话上的一层，分叉复用论文前缀 | 已采纳                                                  |
 
 ## 写一份新的
 

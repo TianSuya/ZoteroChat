@@ -15,6 +15,19 @@ export type PanelCopy = {
   clearSelection: string;
   explainSelection: string;
   selectionLabel: string;
+  askAside: string;
+  asideTitle: string;
+  asideBack: string;
+  asidePlaceholder: string;
+  asideQuoteLabel: string;
+  asideEmpty: string;
+  translatePending: string;
+  translateCopy: string;
+  translateCopied: string;
+  translateNeedKey: string;
+  translateFailed: string;
+  translateFontSmaller: string;
+  translateFontLarger: string;
 };
 
 const COPY: Record<UiLanguage, PanelCopy> = {
@@ -34,6 +47,19 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     clearSelection: "清除选区",
     explainSelection: "解释选区",
     selectionLabel: "选中内容",
+    askAside: "针对选段提问",
+    asideTitle: "针对这段",
+    asideBack: "正文",
+    asidePlaceholder: "针对这段提问…",
+    asideQuoteLabel: "来自主对话",
+    asideEmpty: "问这段里不懂的地方。",
+    translatePending: "翻译中…",
+    translateCopy: "复制译文",
+    translateCopied: "已复制",
+    translateNeedKey: "请在设置中填写该翻译引擎的 API key",
+    translateFailed: "翻译失败",
+    translateFontSmaller: "缩小译文",
+    translateFontLarger: "放大译文",
   },
   "zh-TW": {
     welcomeTitle: "問這篇論文",
@@ -51,6 +77,19 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     clearSelection: "清除選區",
     explainSelection: "解釋選區",
     selectionLabel: "選中內容",
+    askAside: "針對選段提問",
+    asideTitle: "針對這段",
+    asideBack: "正文",
+    asidePlaceholder: "針對這段提問…",
+    asideQuoteLabel: "來自主對話",
+    asideEmpty: "問這段裡不懂的地方。",
+    translatePending: "翻譯中…",
+    translateCopy: "複製譯文",
+    translateCopied: "已複製",
+    translateNeedKey: "請在設定中填寫該翻譯引擎的 API key",
+    translateFailed: "翻譯失敗",
+    translateFontSmaller: "縮小譯文",
+    translateFontLarger: "放大譯文",
   },
   en: {
     welcomeTitle: "Ask about this paper",
@@ -68,6 +107,19 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     clearSelection: "Clear selection",
     explainSelection: "Explain selection",
     selectionLabel: "Selected passage",
+    askAside: "Ask about selection",
+    asideTitle: "About this passage",
+    asideBack: "Main thread",
+    asidePlaceholder: "Ask about this passage…",
+    asideQuoteLabel: "From the main conversation",
+    asideEmpty: "Ask about anything unclear in this passage.",
+    translatePending: "Translating…",
+    translateCopy: "Copy translation",
+    translateCopied: "Copied",
+    translateNeedKey: "Add this engine’s API key in Settings",
+    translateFailed: "Translation failed",
+    translateFontSmaller: "Smaller translation text",
+    translateFontLarger: "Larger translation text",
   },
   ja: {
     welcomeTitle: "この論文に聞く",
@@ -85,6 +137,19 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     clearSelection: "選択を解除",
     explainSelection: "選択を解説",
     selectionLabel: "選択箇所",
+    askAside: "この箇所を質問",
+    asideTitle: "この箇所について",
+    asideBack: "本文",
+    asidePlaceholder: "この箇所について聞く…",
+    asideQuoteLabel: "本会話より",
+    asideEmpty: "この箇所で分からないことを聞いてください。",
+    translatePending: "翻訳中…",
+    translateCopy: "訳文をコピー",
+    translateCopied: "コピーしました",
+    translateNeedKey: "設定でこのエンジンの API key を入力してください",
+    translateFailed: "翻訳に失敗しました",
+    translateFontSmaller: "訳文を小さく",
+    translateFontLarger: "訳文を大きく",
   },
   ko: {
     welcomeTitle: "이 논문에 묻기",
@@ -102,6 +167,19 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     clearSelection: "선택 지우기",
     explainSelection: "선택 설명",
     selectionLabel: "선택한 구절",
+    askAside: "선택한 구절에 질문",
+    asideTitle: "이 구절에 대해",
+    asideBack: "본문",
+    asidePlaceholder: "이 구절에 대해 묻기…",
+    asideQuoteLabel: "주 대화에서",
+    asideEmpty: "이 구절에서 모르는 것을 물어보세요.",
+    translatePending: "번역 중…",
+    translateCopy: "번역 복사",
+    translateCopied: "복사됨",
+    translateNeedKey: "설정에서 이 엔진의 API key를 입력하세요",
+    translateFailed: "번역 실패",
+    translateFontSmaller: "번역 글자 작게",
+    translateFontLarger: "번역 글자 크게",
   },
   de: {
     welcomeTitle: "Diese Arbeit befragen",
@@ -119,6 +197,19 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     clearSelection: "Auswahl löschen",
     explainSelection: "Auswahl erklären",
     selectionLabel: "Markierte Stelle",
+    askAside: "Markierung befragen",
+    asideTitle: "Zu dieser Stelle",
+    asideBack: "Hauptverlauf",
+    asidePlaceholder: "Zu dieser Stelle fragen…",
+    asideQuoteLabel: "Aus dem Hauptgespräch",
+    asideEmpty: "Frage, was an dieser Stelle unklar ist.",
+    translatePending: "Übersetze…",
+    translateCopy: "Übersetzung kopieren",
+    translateCopied: "Kopiert",
+    translateNeedKey: "API-Schlüssel für diese Engine in den Einstellungen eintragen",
+    translateFailed: "Übersetzung fehlgeschlagen",
+    translateFontSmaller: "Übersetzungsschrift verkleinern",
+    translateFontLarger: "Übersetzungsschrift vergrößern",
   },
   fr: {
     welcomeTitle: "Interroger cet article",
@@ -136,6 +227,19 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     clearSelection: "Effacer la sélection",
     explainSelection: "Expliquer la sélection",
     selectionLabel: "Passage sélectionné",
+    askAside: "Interroger la sélection",
+    asideTitle: "À propos de ce passage",
+    asideBack: "Fil principal",
+    asidePlaceholder: "Question sur ce passage…",
+    asideQuoteLabel: "Conversation principale",
+    asideEmpty: "Posez une question sur ce qui n'est pas clair ici.",
+    translatePending: "Traduction…",
+    translateCopy: "Copier la traduction",
+    translateCopied: "Copié",
+    translateNeedKey: "Renseignez la clé API de ce moteur dans les paramètres",
+    translateFailed: "Échec de la traduction",
+    translateFontSmaller: "Réduire le texte traduit",
+    translateFontLarger: "Agrandir le texte traduit",
   },
 };
 

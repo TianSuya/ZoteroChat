@@ -14,6 +14,14 @@ declare namespace _ZoteroTypes {
       "fontSize": number;
       "followZoteroTheme": boolean;
       "showSelectionPopupButtons": boolean;
+      "translateEngine": string;
+      "translateDeeplKey": string;
+      "translateGoogleCloudKey": string;
+      "translateAzureKey": string;
+      "translateAzureRegion": string;
+      "translateFontSize": number;
+      "translatePopupWidth": number;
+      "translatePopupHeight": number;
       "showCostBar": boolean;
       "debugDumpPayload": boolean;
       "devSeedPDF": string;

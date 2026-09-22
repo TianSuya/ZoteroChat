@@ -8,9 +8,9 @@
 | **M1** | iframe 挂载 + React root + shadcn 组件 Notion 化 + 高度自适应                | ✅                                                                                                                     |
 | **M2** | 全文提取 + 规范化 + Chat Completions SSE + `useExternalStoreRuntime` 接线    | ✅                                                                                                                     |
 | **M3** | `prefixBuilder` + `stableStringify` + `prefixLedger` + usage 归一化 + 成本条 | ✅ 已接到发请求路径；单元测试覆盖 prefix 稳定与 language 不破前缀。`prompt_cache_key` 未发送；端到端命中率尚未专测     |
-| **M4** | DB 落地（append-only）+ 会话绑定 item + 重启恢复 + 划词 popup                | ⬜ **划词已交付**（芯片、消息标注、弹窗解释、dismiss，见 [adr/0008](adr/0008-selection-suffix.md)）；sqlite 持久化未做 |
+| **M4** | DB 落地（append-only）+ 会话绑定 item + 重启恢复 + 划词 popup                | ⬜ **划词 / 解释选区 / 弹窗译文已交付**（[adr/0008](adr/0008-selection-suffix.md)）；sqlite 持久化未做 |
 | **M5** | 长文固化压缩 + checkpoint 换会话 + 上下文水位提示                            | ⬜                                                                                                                     |
-| **M6** | Markdown + MathML、斜杠命令、导出笔记、设置面板                              | ⬜ **渲染 / 斜杠 / 设置 / 语言 / 字号已交付**（XHTML 注入见 [adr/0007](adr/0007-xhtml-html-inject.md)）；导出笔记未做  |
+| **M6** | Markdown + MathML、斜杠命令、导出笔记、设置面板                              | ⬜ **渲染 / 斜杠 / 设置 / 语言 / 字号 / 针对选段提问已交付**（[adr/0007](adr/0007-xhtml-html-inject.md)、[adr/0009](adr/0009-aside-overlay.md)）；导出笔记未做  |
 
 ## 已完成部分的遗留项
 

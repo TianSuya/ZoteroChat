@@ -7,10 +7,12 @@ export function SafeHtml({
   html,
   fallback,
   className,
+  onReady,
 }: {
   html: string;
   fallback: string;
   className?: string;
+  onReady?: (node: HTMLElement) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -23,7 +25,8 @@ export function SafeHtml({
       report("markdown inject failed", String(err));
       node.textContent = fallback;
     }
-  }, [html, fallback]);
+    onReady?.(node);
+  }, [html, fallback, onReady]);
 
   return <div ref={ref} className={className} />;
 }

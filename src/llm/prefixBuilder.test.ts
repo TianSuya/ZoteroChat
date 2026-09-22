@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRequestMessages, frozenPrefix } from "./prefixBuilder";
+import {
+  buildCurrentUserMessage,
+  buildRequestMessages,
+  frozenPrefix,
+} from "./prefixBuilder";
 import { PrefixLedger, hashMessages } from "./prefixLedger";
 import { ACK_TEXT, SYSTEM_PROMPT } from "./prompts";
 import { stableStringify } from "./stableStringify";
@@ -83,5 +87,59 @@ describe("PrefixLedger", () => {
       language: "zh-CN",
     });
     expect(ledger.check(turn2).ok).toBe(true);
+  });
+});
+
+describe("aside fork", () => {
+  it("keeps the paper prefix and forks after main turns", () => {
+    const prefix = frozenPrefix("title: X", "hello");
+    const mainLedger = new PrefixLedger();
+    const turn1 = buildRequestMessages({
+      prefix,
+      turns: [],
+      question: "Summarize.",
+      language: "en",
+    });
+    const reply1 = {
+      role: "assistant" as const,
+      content: "A method called Foobar.",
+    };
+    mainLedger.commit([...turn1, reply1]);
+    const fork = [turn1[turn1.length - 1]!, reply1];
+
+    const asideLedger = new PrefixLedger();
+    asideLedger.commit([...prefix, ...fork]);
+    const aside1 = buildRequestMessages({
+      prefix,
+      turns: fork,
+      question: "What is Foobar?",
+      language: "en",
+      asideQuote: "A method called Foobar.",
+    });
+    expect(aside1.slice(0, -1)).toEqual([...prefix, ...fork]);
+    expect(asideLedger.check(aside1).ok).toBe(true);
+    expect(aside1[aside1.length - 1]?.content).toMatch(/<aside-quote>/);
+    expect(aside1[aside1.length - 1]?.content).toMatch(/brief aside/);
+
+    const main2 = buildRequestMessages({
+      prefix,
+      turns: fork,
+      question: "And the results?",
+      language: "en",
+    });
+    expect(mainLedger.check(main2).ok).toBe(true);
+    expect(main2[main2.length - 1]?.content).not.toMatch(/<aside-quote>/);
+  });
+
+  it("puts aside quote after directives and does not change frozenPrefix", () => {
+    const a = frozenPrefix("title: X", "hello");
+    const msg = buildCurrentUserMessage("What?", null, "zh-CN", "Foobar");
+    expect(frozenPrefix("title: X", "hello")).toEqual(a);
+    expect(msg.indexOf("<turn-directives>")).toBeLessThan(
+      msg.indexOf("<aside-quote>"),
+    );
+    expect(msg.indexOf("<aside-quote>")).toBeLessThan(
+      msg.indexOf("<question>"),
+    );
   });
 });

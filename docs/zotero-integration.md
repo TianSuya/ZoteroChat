@@ -151,7 +151,9 @@ token（`addon/content/preferences.css`）。API key 存在当前 profile 的 pr
 
 - 划词后自动写入当前附件的选区，composer 出现「选中内容」芯片。
 - 发给模型的是当前轮 `<selection page="N">USER_SELECTED_PASSAGE…`，**不改冻结前缀**。
-- 阅读器 popup 有「解释选区」：打开对话并把该段当作本轮选区提问。按钮样式写在
+- 阅读器 popup 上方显示选段译文（默认 Google，可在设置里换 DeepL / Google Cloud /
+  Azure / 对话模型）。目标语言跟「优先语言」。样式写在 reader 文档里，不透明底。
+- 同一弹窗有「解释选区」：打开对话并把该段当作本轮选区提问。按钮样式写在
   popup 所在的 reader 文档里（`padding: 6px 12px` / `min-height: 28px`），
   **不在**面板 frame 内。
 - 叉掉芯片会 `dismissSelection`：记下 fingerprint，live 高亮仍在 PDF 里也不再发送。

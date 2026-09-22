@@ -74,6 +74,16 @@ export interface PanelBridge {
       onPrefixBreak?: () => void;
     },
   ) => BridgeStreamJob;
+  /** Snapshot main turns and start an aside that reuses the paper prefix. */
+  beginAside: (req: { id: string; quote: string }) => void;
+  streamAsideTurn: (
+    req: { asideId: string; question: string },
+    handlers: {
+      onDelta: (text: string) => void;
+      onUsage?: (usage: BridgeUsage) => void;
+      onPrefixBreak?: () => void;
+    },
+  ) => BridgeStreamJob;
   /** Design tokens copied from the host window, plus the resolved theme. */
   theme: {
     mode: "light" | "dark";

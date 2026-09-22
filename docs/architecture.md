@@ -80,6 +80,8 @@ interface PanelBridge {
   showAssistantProbe: boolean;
   beginConversation: () => Promise<BridgePaperStatus>;
   streamTurn: (req, handlers) => BridgeStreamJob;
+  beginAside: (req: { id: string; quote: string }) => void;
+  streamAsideTurn: (req: { asideId: string; question: string }, handlers) => BridgeStreamJob;
   openPreferences: () => void;
   getUiLanguage: () => UiLanguage;
   onUiLanguageChange?: (listener) => () => void;
@@ -138,12 +140,17 @@ src/
 
   runtime/                ── 面板侧对话运行时 ──
     externalStore.ts        展示用历史 + 把回合交给插件 streamTurn
+    asideStore.ts           副对话 overlay 的独立 runtime
+
+  translate/              ── 划词弹窗翻译 ──
+    index.ts / engines/     Google / DeepL / Google Cloud / Azure / 对话模型
+                            fetch 走主窗口；不碰论文前缀
 
   context/                ── 插件侧 ──
     extract.ts / normalize.ts
 
   llm/                    ── 插件侧 ──
-    session.ts              按 itemID 的内存会话 + streamTurn + testConnection
+    session.ts              按 itemID 的内存会话 + streamTurn / beginAside + testConnection
     prefixBuilder.ts        分层组装 [0..n+1]
     prefixLedger.ts         hash 比对 + prefix_break
     prompts.ts              冻结 system（含 LaTeX 约定）+ ACK
