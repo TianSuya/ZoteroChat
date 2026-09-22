@@ -24,20 +24,24 @@ describe("translate parsers", () => {
 
   it("reads DeepL translations[].text", () => {
     expect(
-      parseDeepl({ translations: [{ text: "Hallo", detected_source_language: "EN" }] }),
+      parseDeepl({
+        translations: [{ text: "Hallo", detected_source_language: "EN" }],
+      }),
     ).toBe("Hallo");
   });
 
   it("reads Google Cloud data.translations[].translatedText", () => {
     expect(
-      parseGoogleCloud({ data: { translations: [{ translatedText: "Bonjour" }] } }),
+      parseGoogleCloud({
+        data: { translations: [{ translatedText: "Bonjour" }] },
+      }),
     ).toBe("Bonjour");
   });
 
   it("reads Azure [0].translations[0].text", () => {
-    expect(parseAzure([{ translations: [{ text: "こんにちは", to: "ja" }] }])).toBe(
-      "こんにちは",
-    );
+    expect(
+      parseAzure([{ translations: [{ text: "こんにちは", to: "ja" }] }]),
+    ).toBe("こんにちは");
   });
 
   it("reads Chat Completions message.content", () => {

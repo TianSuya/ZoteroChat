@@ -30,6 +30,10 @@ export async function translateDeepl(
     return asResult(parseDeepl(data));
   } catch (err) {
     if (aborted(err)) return { ok: false, code: "aborted" };
-    return { ok: false, code: "network", detail: String((err as Error)?.message ?? err) };
+    return {
+      ok: false,
+      code: "network",
+      detail: String((err as Error)?.message ?? err),
+    };
   }
 }

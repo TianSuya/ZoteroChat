@@ -22,7 +22,11 @@ export async function readJson(
 }
 
 export function httpError(status: number, snippet: string): TranslateResult {
-  return { ok: false, code: "http", detail: `${status}${snippet ? `: ${snippet}` : ""}` };
+  return {
+    ok: false,
+    code: "http",
+    detail: `${status}${snippet ? `: ${snippet}` : ""}`,
+  };
 }
 
 export function asResult(text: string): TranslateResult {

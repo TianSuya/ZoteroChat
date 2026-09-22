@@ -8,7 +8,9 @@ export async function translateGoogleCloud(
 ): Promise<TranslateResult> {
   const key = apiKey.trim();
   if (!key) return { ok: false, code: "missing-key" };
-  const url = new URL("https://translation.googleapis.com/language/translate/v2");
+  const url = new URL(
+    "https://translation.googleapis.com/language/translate/v2",
+  );
   url.searchParams.set("key", key);
   try {
     const res = await mainFetch()(url.toString(), {
@@ -26,6 +28,10 @@ export async function translateGoogleCloud(
     return asResult(parseGoogleCloud(data));
   } catch (err) {
     if (aborted(err)) return { ok: false, code: "aborted" };
-    return { ok: false, code: "network", detail: String((err as Error)?.message ?? err) };
+    return {
+      ok: false,
+      code: "network",
+      detail: String((err as Error)?.message ?? err),
+    };
   }
 }

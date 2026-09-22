@@ -9,7 +9,9 @@ export async function translateAzure(
 ): Promise<TranslateResult> {
   const key = apiKey.trim();
   if (!key) return { ok: false, code: "missing-key" };
-  const url = new URL("https://api.cognitive.microsofttranslator.com/translate");
+  const url = new URL(
+    "https://api.cognitive.microsofttranslator.com/translate",
+  );
   url.searchParams.set("api-version", "3.0");
   url.searchParams.set("to", req.target);
   try {
@@ -28,6 +30,10 @@ export async function translateAzure(
     return asResult(parseAzure(data));
   } catch (err) {
     if (aborted(err)) return { ok: false, code: "aborted" };
-    return { ok: false, code: "network", detail: String((err as Error)?.message ?? err) };
+    return {
+      ok: false,
+      code: "network",
+      detail: String((err as Error)?.message ?? err),
+    };
   }
 }

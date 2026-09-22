@@ -81,7 +81,10 @@ interface PanelBridge {
   beginConversation: () => Promise<BridgePaperStatus>;
   streamTurn: (req, handlers) => BridgeStreamJob;
   beginAside: (req: { id: string; quote: string }) => void;
-  streamAsideTurn: (req: { asideId: string; question: string }, handlers) => BridgeStreamJob;
+  streamAsideTurn: (
+    req: { asideId: string; question: string },
+    handlers,
+  ) => BridgeStreamJob;
   openPreferences: () => void;
   getUiLanguage: () => UiLanguage;
   onUiLanguageChange?: (listener) => () => void;

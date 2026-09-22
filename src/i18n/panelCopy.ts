@@ -206,7 +206,8 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     translatePending: "Übersetze…",
     translateCopy: "Übersetzung kopieren",
     translateCopied: "Kopiert",
-    translateNeedKey: "API-Schlüssel für diese Engine in den Einstellungen eintragen",
+    translateNeedKey:
+      "API-Schlüssel für diese Engine in den Einstellungen eintragen",
     translateFailed: "Übersetzung fehlgeschlagen",
     translateFontSmaller: "Übersetzungsschrift verkleinern",
     translateFontLarger: "Übersetzungsschrift vergrößern",

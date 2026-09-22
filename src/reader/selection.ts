@@ -28,9 +28,11 @@ function htmlEl<K extends keyof HTMLElementTagNameMap>(
 
 function newAbortController(): AbortController | null {
   try {
-    const Ctor = (Zotero.getMainWindow() as unknown as {
-      AbortController?: typeof AbortController;
-    })?.AbortController;
+    const Ctor = (
+      Zotero.getMainWindow() as unknown as {
+        AbortController?: typeof AbortController;
+      }
+    )?.AbortController;
     if (Ctor) return new Ctor();
   } catch {
     // Plugin sandbox has no window constructors.
@@ -196,7 +198,8 @@ function popupTranslateBox(doc: Document, source: string): HTMLElement {
   area.addEventListener("mouseup", () => savePopupSize(area));
 
   const tools = htmlEl(doc, "div");
-  tools.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;align-items:center;";
+  tools.style.cssText =
+    "display:flex;flex-wrap:wrap;gap:4px;align-items:center;";
 
   const smaller = popupChipButton(doc, "A−");
   smaller.title = copy.translateFontSmaller;
@@ -232,7 +235,10 @@ function popupTranslateBox(doc: Document, source: string): HTMLElement {
       }, 1200);
     };
     if (clip?.writeText) {
-      void clip.writeText(translated).then(done).catch(() => undefined);
+      void clip
+        .writeText(translated)
+        .then(done)
+        .catch(() => undefined);
     }
   });
 
