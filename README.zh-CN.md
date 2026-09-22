@@ -156,6 +156,7 @@ npm run build:production   # 生产 XPI
 ## 贡献者
 
 - [TianSuya](https://github.com/TianSuya)
+- [JinnWang-JY](https://github.com/JinnWang-JY)
 - [shawnliang420](https://github.com/shawnliang420)
 
 ## 许可证

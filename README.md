@@ -156,6 +156,7 @@ Upcoming work includes persistent conversations, long-document compression, and 
 ## Contributors
 
 - [TianSuya](https://github.com/TianSuya)
+- [JinnWang-JY](https://github.com/JinnWang-JY)
 - [shawnliang420](https://github.com/shawnliang420)
 
 ## License
