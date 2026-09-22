@@ -151,7 +151,7 @@ npm run build:production   # 生产 XPI
 
 贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，Zotero 配置与运行时探针见 [docs/development.md](docs/development.md)。欢迎中英文 issue 和 PR；设计文档目前以中文为主。
 
-后续工作包括对话持久化、长文压缩和导出 Zotero 笔记，具体进度见[路线图](docs/roadmap.md)。
+后续工作包括长文压缩和导出 Zotero 笔记，具体进度见[路线图](docs/roadmap.md)。
 
 ## 贡献者
 

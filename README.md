@@ -151,7 +151,7 @@ npm run build:production   # Production XPI
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/development.md](docs/development.md) for Zotero setup and runtime probes. English and Chinese issues and pull requests are welcome. Most design notes are currently in Chinese.
 
-Upcoming work includes persistent conversations, long-document compression, and export to Zotero notes. Track implementation status in the [roadmap](docs/roadmap.md).
+Upcoming work includes long-document compression and export to Zotero notes. Track implementation status in the [roadmap](docs/roadmap.md).
 
 ## Contributors
 
