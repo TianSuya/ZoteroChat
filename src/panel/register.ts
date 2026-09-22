@@ -9,6 +9,7 @@ import {
 import {
   beginAside,
   beginConversation,
+  resetConversation,
   streamAsideTurn,
   streamTurn,
 } from "../llm/session";
@@ -158,6 +159,7 @@ export function registerPanelSection() {
           Zotero.Prefs.get(`${config.prefsPrefix}.devShowAssistantProbe`, true),
         ),
         beginConversation: () => beginConversation(itemID),
+        resetConversation: () => resetConversation(itemID),
         openPreferences,
         getUiLanguage: readUiLanguage,
         onUiLanguageChange,

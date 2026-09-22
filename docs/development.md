@@ -224,6 +224,12 @@ XHTML `innerHTML` + MathML → `InvalidCharacterError`；`importNode` 死循环�
 不要把语言写进冻结的 system。见 `src/i18n/directives.ts` 与
 [adr/0003](adr/0003-prefix-freeze.md)。
 
+### 打开 PDF 卡在「正在检查数据库完整性」
+
+插件库必须用绝对路径打开。见
+[environment.md §14](environment.md#十四打开-pdf-卡在正在检查数据库完整性)。
+完全退出 Zotero 后，可删 `{dataDir}/zoterochat.sqlite-wal` 和 `-shm`（不要动 `zotero.sqlite`）。
+
 ### 划词后没有译文、也没有「解释选区」
 
 插件沙箱里不要 `new AbortController()`。日志搜 `translate popup failed`。

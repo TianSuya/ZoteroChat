@@ -28,6 +28,8 @@
     "src/prefs/register.ts",
     "src/reader/**/*.ts",
     "src/translate/**/*.ts",
+    "src/store/**/*.ts",
+    "src/ui/thread/userContent.ts",
     "src/dev/seed.ts",
     "src/utils/ztoolkit.ts",
     "src/panel-app/bridge.ts",

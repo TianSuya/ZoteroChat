@@ -103,9 +103,10 @@ interface PanelBridge {
 发一轮：面板 `useThreadRuntime` 把**芯片上的选区**（用户叉掉则为 `null`）和问题交给
 `streamTurn` → `prefixBuilder` 组装 `[0..2] + 历史 + 当前轮` → Chat Completions SSE。
 `fetch` 走主窗口（bootstrap 沙箱没有 browsing context），API key 留在插件侧。
-默认端点 DeepSeek，`thinking: { type: "disabled" }`。展示用历史只存在面板内存里；
-插件 `session.ts` 按 `itemID` 另存一份 wire-format 轮次和冻结前缀。关标签即丢，
-sqlite 尚未落地。
+默认端点 DeepSeek，`thinking: { type: "disabled" }`。
+插件 `session.ts` 按附件保存 wire-format 轮次和冻结前缀，并写入 profile 下的
+`zoterochat.sqlite`。重开 Zotero / 再打开同一 PDF 会恢复主对话和副对话。
+「新对话」把当前会话 `archived=1`，另起一条空会话（消息行不删）。
 
 同一 section body **换 PDF** 时拆掉旧 iframe 再建，不 reparent
 （[adr/0005](adr/0005-no-frame-reparent.md)）。
@@ -145,6 +146,10 @@ src/
     externalStore.ts        展示用历史 + 把回合交给插件 streamTurn
     asideStore.ts           副对话 overlay 的独立 runtime
 
+  store/                  ── 持久化 ──
+    db.ts                   绝对路径打开 {dataDir}/zoterochat.sqlite
+                            文档 / 会话 / 消息 / 副对话；消息只 INSERT
+
   translate/              ── 划词弹窗翻译 ──
     index.ts / engines/     Google / DeepL / Google Cloud / Azure / 对话模型
                             fetch 走主窗口；不碰论文前缀
@@ -153,7 +158,7 @@ src/
     extract.ts / normalize.ts
 
   llm/                    ── 插件侧 ──
-    session.ts              按 itemID 的内存会话 + streamTurn / beginAside + testConnection
+    session.ts              按附件打开/归档会话 + sqlite 落盘 + streamTurn / beginAside
     prefixBuilder.ts        分层组装 [0..n+1]
     prefixLedger.ts         hash 比对 + prefix_break
     prompts.ts              冻结 system（含 LaTeX 约定）+ ACK
@@ -199,7 +204,7 @@ assets/
   logo-h.png              横标（GitHub README）
 ```
 
-`runtime/externalStore.ts` 只保存**展示用**历史。发请求时面板把当前问题交给插件，由 `llm/session.ts` 组装冻结前缀 + append-only 轮次，再走 Chat Completions SSE。API key 写在设置页（profile prefs），开发期若为空则回退 `devApiKeyFile`。
+`runtime/externalStore.ts` 打开面板时从插件拉回已保存的展示历史。发请求时面板把当前问题交给插件，由 `llm/session.ts` 组装冻结前缀 + append-only 轮次，再走 Chat Completions SSE，并写入 sqlite。API key 写在设置页（profile prefs），开发期若为空则回退 `devApiKeyFile`。
 
 ## 尚未实现
 
@@ -207,7 +212,6 @@ assets/
 
 ```
   context/freeze.ts       超长 PDF 一次性固化压缩
-  store/                  独立 sqlite 持久化对话
   导出笔记                 助手回复写入 Zotero note
   prompt_cache_key        请求体尚未带这个字段
 ```

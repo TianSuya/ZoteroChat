@@ -1,6 +1,7 @@
 import { checkSizing } from "./dev/checkSizing";
 import { seedDevLibrary } from "./dev/seed";
 import { registerPanelSection, unregisterPanelSection } from "./panel/register";
+import { closeDB } from "./store/db";
 import { registerPreferencePane } from "./prefs/register";
 import {
   registerReaderSelection,
@@ -36,6 +37,7 @@ async function onMainWindowUnload(_win: Window) {
 function onShutdown() {
   unregisterReaderSelection();
   unregisterPanelSection();
+  void closeDB();
 
   addon.data.alive = false;
   addon.data.initialized = false;

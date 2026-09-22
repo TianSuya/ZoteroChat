@@ -50,8 +50,10 @@ export function App({ bridge }: { bridge: PanelBridge }) {
   }, [fontSize]);
 
   const onNewConversation = useCallback(() => {
-    setSession((n) => n + 1);
-  }, []);
+    void bridge.resetConversation().finally(() => {
+      setSession((n) => n + 1);
+    });
+  }, [bridge]);
 
   return (
     <ErrorBoundary label="panel">
@@ -120,6 +122,17 @@ function ChatSession({
     () => bridge.onSelectionChange?.(commitSelection),
     [bridge, commitSelection],
   );
+  useEffect(() => {
+    setAsides(
+      view.restoredAsides.map((a) => ({
+        id: a.id,
+        sourceMessageId: a.sourceMessageId,
+        quote: a.quote,
+        fromSelection: a.fromSelection,
+        messages: a.messages,
+      })),
+    );
+  }, [view.restoredAsides]);
 
   useEffect(() => {
     const el = mainRootRef.current;
@@ -135,7 +148,12 @@ function ChatSession({
       origin: "selection" | "message",
     ) => {
       const id = generateId();
-      bridge.beginAside({ id, quote });
+      bridge.beginAside({
+        id,
+        quote,
+        sourceMessageId,
+        fromSelection: origin === "selection",
+      });
       setAsides((prev) => [
         ...prev,
         {

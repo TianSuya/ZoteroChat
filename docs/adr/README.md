@@ -7,7 +7,7 @@
 | [0001](0001-ui-in-iframe.md)      | UI 跑在 iframe 而非 Shadow DOM           | 已采纳                                                        |
 | [0002](0002-tailwind-v3.md)       | 锁 Tailwind v3                           | 已采纳                                                        |
 | [0003](0003-prefix-freeze.md)     | 前缀冻结换缓存命中                       | 已采纳（内存会话已接到发请求路径；`prompt_cache_key` 未发送） |
-| [0004](0004-append-only-store.md) | 历史 append-only                         | 已采纳（内存只追加；sqlite 未做）                             |
+| [0004](0004-append-only-store.md) | 历史 append-only                         | 已采纳（sqlite 已落地；消息只 INSERT）                        |
 | [0005](0005-no-frame-reparent.md) | frame 永不 reparent                      | 已采纳                                                        |
 | [0006](0006-panel-auto-sizing.md) | 面板高度自适应 item pane                 | 已采纳                                                        |
 | [0007](0007-xhtml-html-inject.md) | XHTML 面板禁止 innerHTML 灌 MathML       | 已采纳                                                        |

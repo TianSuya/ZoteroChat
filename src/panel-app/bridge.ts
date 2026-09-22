@@ -15,6 +15,25 @@ export type BridgePaperStatus = {
   hash: string;
 };
 
+export type BridgeDisplayMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type BridgeAside = {
+  id: string;
+  sourceMessageId: string;
+  quote: string;
+  fromSelection: boolean;
+  messages: BridgeDisplayMessage[];
+};
+
+export type BridgeSession = BridgePaperStatus & {
+  messages: BridgeDisplayMessage[];
+  asides: BridgeAside[];
+};
+
 export type BridgeUsage = {
   promptTokens: number;
   completionTokens: number;
@@ -43,8 +62,10 @@ export interface PanelBridge {
   showProbe: boolean;
   /** Opt-in assistant-ui runtime probe. */
   showAssistantProbe: boolean;
-  /** Extract (or reuse) the frozen paper prefix for this attachment. */
-  beginConversation: () => Promise<BridgePaperStatus>;
+  /** Open the saved conversation for this PDF (creates one if needed). */
+  beginConversation: () => Promise<BridgeSession>;
+  /** Archive the current thread and start a blank one. */
+  resetConversation: () => Promise<BridgeSession>;
   /** Open this plugin's pane in Zotero settings. */
   openPreferences: () => void;
   /** Resolved UI language for chips, placeholders, and slash commands. */
@@ -67,7 +88,12 @@ export interface PanelBridge {
   ) => () => void;
   /** Send one turn. The plugin owns the wire-format history. */
   streamTurn: (
-    req: { question: string; selection?: BridgeSelection | null },
+    req: {
+      question: string;
+      selection?: BridgeSelection | null;
+      userId?: string;
+      assistantId?: string;
+    },
     handlers: {
       onDelta: (text: string) => void;
       onUsage?: (usage: BridgeUsage) => void;
@@ -75,9 +101,19 @@ export interface PanelBridge {
     },
   ) => BridgeStreamJob;
   /** Snapshot main turns and start an aside that reuses the paper prefix. */
-  beginAside: (req: { id: string; quote: string }) => void;
+  beginAside: (req: {
+    id: string;
+    quote: string;
+    sourceMessageId: string;
+    fromSelection?: boolean;
+  }) => void;
   streamAsideTurn: (
-    req: { asideId: string; question: string },
+    req: {
+      asideId: string;
+      question: string;
+      userId?: string;
+      assistantId?: string;
+    },
     handlers: {
       onDelta: (text: string) => void;
       onUsage?: (usage: BridgeUsage) => void;

@@ -53,7 +53,7 @@ export function useAsideRuntime(
       ]);
 
       const job = bridge.streamAsideTurn(
-        { asideId, question },
+        { asideId, question, userId: userID, assistantId: assistantID },
         {
           onDelta: (piece) => {
             setMessages((prev) =>

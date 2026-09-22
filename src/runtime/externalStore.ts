@@ -7,6 +7,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
+  BridgeAside,
   BridgePaperStatus,
   BridgeSelection,
   BridgeUsage,
@@ -38,6 +39,7 @@ export type RuntimeView = {
   paperLoading: boolean;
   usage: BridgeUsage | null;
   prefixBreak: boolean;
+  restoredAsides: BridgeAside[];
 };
 
 /**
@@ -58,6 +60,7 @@ export function useThreadRuntime(
   const [paperLoading, setPaperLoading] = useState(true);
   const [usage, setUsage] = useState<BridgeUsage | null>(null);
   const [prefixBreak, setPrefixBreak] = useState(false);
+  const [restoredAsides, setRestoredAsides] = useState<BridgeAside[]>([]);
   const cancelRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -69,6 +72,8 @@ export function useThreadRuntime(
       .then((status) => {
         if (cancelled) return;
         setPaper(status);
+        setMessages(status.messages);
+        setRestoredAsides(status.asides);
         setPaperLoading(false);
         report("paper ready", status.charCount, status.hash);
       })
@@ -106,7 +111,7 @@ export function useThreadRuntime(
       ]);
 
       const job = bridge.streamTurn(
-        { question, selection },
+        { question, selection, userId: userID, assistantId: assistantID },
         {
           onDelta: (piece) => {
             setMessages((prev) =>
@@ -158,6 +163,13 @@ export function useThreadRuntime(
 
   return {
     runtime,
-    view: { paper, paperError, paperLoading, usage, prefixBreak },
+    view: {
+      paper,
+      paperError,
+      paperLoading,
+      usage,
+      prefixBreak,
+      restoredAsides,
+    },
   };
 }

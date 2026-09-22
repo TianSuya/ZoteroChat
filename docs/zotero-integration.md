@@ -163,7 +163,10 @@ token（`addon/content/preferences.css`）。API key 存在当前 profile 的 pr
 
 ### 持久化
 
-计划用**独立 sqlite 文件**（`new Zotero.DBConnection("zoterochat")`），不写
-`zotero.sqlite`。主库会被 Zotero 的备份、迁移、完整性检查触及，风险不值得。
+独立 sqlite：`{dataDir}/zoterochat.sqlite`，**必须用绝对路径**打开
+（`new Zotero.DBConnection(absPath)`），这样 `_externalDB = true`。
+只传库名会被当成内部库，WAL 残留会触发「正在检查数据库完整性」并卡很久。
+见 [environment.md §14](environment.md#十四打开-pdf-卡在正在检查数据库完整性)。
 
-表结构见 [roadmap.md](roadmap.md)。
+不写 `zotero.sqlite`。消息只 INSERT；「新对话」把当前会话 `archived=1`。
+实现见 `src/store/db.ts` 与 [adr/0004](adr/0004-append-only-store.md)。

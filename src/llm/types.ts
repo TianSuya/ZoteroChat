@@ -23,3 +23,22 @@ export type PaperStatus = {
   charCount: number;
   hash: string;
 };
+
+export type DisplayMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type LoadedAside = {
+  id: string;
+  sourceMessageId: string;
+  quote: string;
+  fromSelection: boolean;
+  messages: DisplayMessage[];
+};
+
+export type SessionSnapshot = PaperStatus & {
+  messages: DisplayMessage[];
+  asides: LoadedAside[];
+};

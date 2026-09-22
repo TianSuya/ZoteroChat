@@ -15,7 +15,7 @@
 
 **ZoteroChat** is a PDF reading assistant in Zotero's sidebar. Ask about the paper, discuss a highlighted passage, or work through an explanation with rendered equations. The extracted paper text stays in the conversation context, with a stable prompt prefix designed to support provider-side caching.
 
-> **Early release:** conversations are held in memory and are not restored after a restart. Recreating the sidebar, including some tab changes, starts a new conversation. Save any answers you need before leaving the session.
+> Conversations are stored in the current Zotero profile (`zoterochat.sqlite`) and restored when you reopen the same PDF. **New conversation** archives the current thread and starts a blank one.
 
 ## Features
 
@@ -107,7 +107,7 @@ Install the `.xpi` generated under `.scaffold/build/`. Building does not require
 | Operating systems    | Cross-platform verification is incomplete. Report the OS and Zotero version with compatibility issues.                                                                                                                                     |
 | Model endpoints      | DeepSeek is the documented development endpoint. Other OpenAI-compatible Chat Completions services and local servers require validation. The client currently sends `thinking` and streaming usage options without capability negotiation. |
 | Local servers        | The settings loader currently requires a nonempty API key, even if the server itself does not require authentication.                                                                                                                      |
-| Conversation history | Memory only. No restart recovery, editing of committed messages, or conversation branches. Sidebar recreation can reset history.                                                                                                           |
+| Conversation history | Stored per PDF in the Zotero profile. No editing of committed messages or conversation branches. **New conversation** archives the old thread.                                                                                             |
 | Long documents       | The paper and conversation must fit the model's context window. Automatic compression and context-limit handling are not implemented.                                                                                                      |
 | PDF content          | Uses extracted text, not page images. No built-in OCR or visual understanding of figures. Text extraction can omit layout or mathematical detail.                                                                                          |
 | References           | Full-text extraction does not preserve page mapping. Check claims and references against the paper.                                                                                                                                        |
@@ -135,7 +135,7 @@ See the [context design](docs/overview.md) and [prefix-freezing decision](docs/a
 | Sidebar asks you to open a PDF | Open the attachment in Zotero's reader; the library view is not a chat session.                                |
 | Connection fails               | Check Base URL, model, API key, and the provider's error response. Do not post your key in an issue.           |
 | Text extraction fails          | Confirm the PDF has selectable text. Image-only scans need text extraction/OCR outside this plugin.            |
-| History disappears             | Persistence is not implemented; a recreated panel starts a new session.                                        |
+| History disappears             | Confirm you opened the same PDF attachment. Use **New conversation** only when you want a blank thread.        |
 | No cache statistics            | The endpoint may not return streaming usage or cache fields. Missing statistics do not establish a cache miss. |
 
 For other issues, use the [bug report form](https://github.com/TianSuya/ZoteroChat/issues/new?template=bug_report.yml) with reproduction steps and version information. Runtime troubleshooting notes are in [docs/environment.md](docs/environment.md).

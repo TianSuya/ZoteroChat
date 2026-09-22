@@ -330,6 +330,17 @@ for (const node of Array.from(parsed.body.childNodes)) {
 
 ---
 
+## 十四、打开 PDF 卡在「正在检查数据库完整性」
+
+`Zotero.DBConnection("zoterochat")`（只有库名、没有绝对路径）会被当成 **Zotero 内部库**。
+内部库在发现非空 `-wal` 时会跑完整 `PRAGMA integrity_check`，并显示
+「正在检查数据库完整性…」。对话库里存了整篇论文正文，这一步会极慢，看起来像卡死。
+
+解法：用 **绝对路径** 打开（`{dataDir}/zoterochat.sqlite`），这样 `_externalDB = true`，
+跳过内部库的 WAL 完整性检查和 idle backup。不要对插件库调用 `integrityCheck()`。
+
+---
+
 ## 十二、划词弹窗整块消失（译文和「解释选区」一起没了）
 
 `renderTextSelectionPopup` 的回调跑在**插件 bootstrap 沙箱**里。沙箱没有完整 DOM 全局。
