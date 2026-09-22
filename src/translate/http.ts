@@ -11,10 +11,12 @@ export async function readJson(
 ): Promise<{ status: number; data: unknown; snippet: string }> {
   const raw = await res.text();
   let data: unknown = null;
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      data = null;
+    }
   }
   return { status: res.status, data, snippet: raw.slice(0, 180) };
 }
