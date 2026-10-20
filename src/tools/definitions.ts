@@ -132,10 +132,12 @@ function askUserTool(): ToolDefinition {
 export function buildToolDefinitions(opts: {
   search: boolean;
   download: boolean;
+  /** Asides currently only retrieve; ask_user stays in the main thread. */
+  askUser?: boolean;
 }): ToolDefinition[] {
   const tools: ToolDefinition[] = [];
   if (opts.search) tools.push(searchTool(), fetchTool());
   if (opts.download) tools.push(addPaperTool());
-  tools.push(askUserTool());
+  if (opts.askUser !== false) tools.push(askUserTool());
   return tools;
 }

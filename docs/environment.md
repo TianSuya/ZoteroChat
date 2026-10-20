@@ -392,7 +392,10 @@ Search/Fetch 按成功请求计费，空结果不计费。
 `add_paper_to_zotero` 只接受 http(s)、无凭据、非 localhost/私网地址；下载到
 `Zotero.getTempDirectory()` 后检查 80 MB 上限和 `%PDF-` 魔数，再
 `Zotero.Attachments.importFromFile`。失败时删除临时文件并回滚父条目。
-arXiv `abs` 和 OpenReview `forum` 会转成 PDF 直链；需要登录的出版商页面可能失败。
+**`Zotero.Attachments.downloadFile()` 成功时返回 `undefined`，不是 `true`**；
+不要用 `if (!ok)` 判断，否则成功下载也会报 `Download failed.`。现在以落盘文件
+是否存在为准，失败时再用主窗口 `fetch` 兜底。arXiv `abs` 和 OpenReview `forum`
+会转成 PDF 直链；需要登录/CAPTCHA 的出版商页面仍可能失败。
 
 ### 15.4 Ask User 的等待状态不持久化
 

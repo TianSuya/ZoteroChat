@@ -72,8 +72,9 @@ UI 上：
 
 ### 范围
 
-首版工具、Ask User、笔记都只作用于主对话。副对话保持原有的论文内短问，不注入
-工具，也不显示笔记入口。这样避免在 overlay 里再维护一套 tool loop 和确认流程。
+搜索/抓取在主对话和副对话都可用；副对话跑同一套 tool loop，但只暴露
+`search_web` / `fetch_url`。Ask User、论文入库和笔记仍只作用于主对话，避免在
+overlay 里再维护一套确认/批注流程。
 
 ## 代价
 
@@ -81,8 +82,9 @@ UI 上：
   24k 字符。
 - 模型可能调用工具失败；错误以 `ERROR: …` 的 tool 结果返回，由模型自行恢复，
   不会中断整个回合。
-- 论文下载依赖目标站点可用性和 `Zotero.Attachments.downloadFile` 的 cookie/
-  重定向行为；非直链 PDF 可能失败。
+- 论文下载依赖目标站点可用性。Zotero 的 `downloadFile()` 成功时返回
+  `undefined`，不能把返回值当布尔；客户端以落盘文件为准，并在失败时用主窗口
+  `fetch` 兜底。需要登录或 CAPTCHA 的出版商页面仍可能失败。
 - 笔记只存在当前 profile 的 sqlite，不导出、不同步；首版也没有全局笔记列表。
 - 搜索/抓取工具的可用性取决于端点是否支持 tool calls；非 DeepSeek 兼容端点
   仍需要单独验证。
@@ -92,8 +94,9 @@ UI 上：
 - `src/llm/client/toolCallDelta.test.ts`：分片、并行、重复 name、缺失 id
 - `src/llm/agent.test.ts`：单轮/工具轮/最大轮数
 - `src/tools/search.test.ts`：端点、请求体、结果映射、错误
-- `src/tools/library.test.ts`：URL 安全边界、arXiv/OpenReview PDF 解析
+- `src/tools/library.test.ts`：URL 安全边界、arXiv/OpenReview PDF 解析、landing page 的 citation_pdf_url/链解析
 - `src/tools/execute.test.ts`：搜索、ask_user、错误恢复、危险 URL 不入库
-- `npm run check`：lint、格式、类型、61 个单测通过
+- `src/tools/definitions.test.ts`：主对话/副对话的工具暴露范围
+- `npm run check`：lint、格式、类型、67 个单测通过
 - `npm run build:production`：产出 XPI
-- `sqlite3` 模拟 v1 库：补列后旧消息 `visible=1`，tool 消息 `visible=0`，`zc_notes` 可写
+- `sqlite3` 模拟 v1/v2 库：补列后旧消息 `visible=1`，tool 消息 `visible=0`，`zc_notes` 与副对话工具列可写

@@ -176,8 +176,11 @@ token（`addon/content/preferences.css`）。API key 存在当前 profile 的 pr
 - Fetch：`POST {searchBaseUrl}/v1/tools/fetch`，正文截断到 24k 字符
 - 入库：先按 DOI 去重，再弹确认卡；确认后下载 PDF、校验大小与 `%PDF-` 魔数，
   在 PDF 所属 library 创建 `journalArticle` + 子附件
+- Search/Fetch 在主对话和副对话都可用；Ask User、入库只在主对话
 - 工具结果以 `role: "tool"` 追加到 wire history；中间消息 `visible=0`，只有最终
   assistant 气泡显示工具 trace
+- 下载先走 `Zotero.Attachments.downloadFile`，成功与否以落盘文件为准（该 API
+  成功时返回 `undefined`）；失败时用主窗口 `fetch` 兜底并给出两条路径的错误
 
 实现见 [adr/0010](adr/0010-tools-and-notes.md)。
 
@@ -197,6 +200,7 @@ token（`addon/content/preferences.css`）。API key 存在当前 profile 的 pr
 不写 `zotero.sqlite`。消息只 INSERT；「新对话」把当前会话 `archived=1`。
 实现见 `src/store/db.ts` 与 [adr/0004](adr/0004-append-only-store.md)。
 
-Schema v2 在 `zc_messages` 上增加 `visible`、`tool_calls_json`、
-`tool_call_id`、`tool_name`、`tool_trace_json`，并新增 `zc_notes`。旧库打开时
-用 `PRAGMA table_info` + `ALTER TABLE` 原地补列；不需要手动迁移。
+Schema v3 在 `zc_messages` 和 `zc_aside_messages` 上都增加 `visible`、
+`tool_calls_json`、`tool_call_id`、`tool_name`、`tool_trace_json`，并新增
+`zc_notes`。旧库打开时用 `PRAGMA table_info` + `ALTER TABLE` 原地补列；不需要
+手动迁移。

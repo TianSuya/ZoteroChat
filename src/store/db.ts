@@ -10,7 +10,7 @@
 
 import type { LoadedNote, ToolCall, ToolTrace } from "../llm/types";
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const DDL = [
   `CREATE TABLE IF NOT EXISTS zc_meta (
@@ -72,6 +72,11 @@ const DDL = [
      wire_content TEXT NOT NULL,
      display_content TEXT NOT NULL,
      display_id TEXT NOT NULL,
+     visible INTEGER NOT NULL DEFAULT 1,
+     tool_calls_json TEXT,
+     tool_call_id TEXT,
+     tool_name TEXT,
+     tool_trace_json TEXT,
      created_at INTEGER NOT NULL,
      UNIQUE (aside_id, seq)
    )`,
@@ -170,6 +175,19 @@ async function open(): Promise<_ZoteroTypes.DB | null> {
     await ensureColumn(db, "zc_messages", "tool_call_id", "TEXT");
     await ensureColumn(db, "zc_messages", "tool_name", "TEXT");
     await ensureColumn(db, "zc_messages", "tool_trace_json", "TEXT");
+
+    // v2 → v3: asides can run the same search/fetch tool loop as the main
+    // thread, so they need the same hidden-message metadata.
+    await ensureColumn(
+      db,
+      "zc_aside_messages",
+      "visible",
+      "INTEGER NOT NULL DEFAULT 1",
+    );
+    await ensureColumn(db, "zc_aside_messages", "tool_calls_json", "TEXT");
+    await ensureColumn(db, "zc_aside_messages", "tool_call_id", "TEXT");
+    await ensureColumn(db, "zc_aside_messages", "tool_name", "TEXT");
+    await ensureColumn(db, "zc_aside_messages", "tool_trace_json", "TEXT");
 
     await db.queryAsync(
       `INSERT INTO zc_meta (key, value) VALUES ('schema', ?)
@@ -427,7 +445,8 @@ export async function loadAsides(
     const id = String(head.id);
     const msgs =
       (await db.queryAsync(
-        `SELECT seq, role, wire_content, display_content, display_id
+        `SELECT seq, role, wire_content, display_content, display_id, visible,
+                tool_calls_json, tool_call_id, tool_name, tool_trace_json
            FROM zc_aside_messages
           WHERE aside_id = ?
           ORDER BY seq ASC`,
@@ -441,11 +460,21 @@ export async function loadAsides(
       forkSeq: Number(head.fork_seq),
       messages: msgs.map((row) => ({
         seq: Number(row.seq),
-        role: row.role === "assistant" ? "assistant" : "user",
+        role:
+          row.role === "assistant"
+            ? "assistant"
+            : row.role === "tool"
+              ? "tool"
+              : "user",
         wireContent: String(row.wire_content),
         displayContent: String(row.display_content),
         displayId: String(row.display_id),
-        visible: true,
+        visible: Number(row.visible) === 1,
+        toolCalls: parseJson<ToolCall[]>(row.tool_calls_json),
+        toolCallId:
+          row.tool_call_id == null ? undefined : String(row.tool_call_id),
+        toolName: row.tool_name == null ? undefined : String(row.tool_name),
+        toolTrace: parseJson<ToolTrace[]>(row.tool_trace_json),
       })),
     });
   }
@@ -465,8 +494,9 @@ export async function appendAsideTurn(
   const seq = (typeof last === "number" ? last : -1) + 1;
   await db.queryAsync(
     `INSERT INTO zc_aside_messages
-       (aside_id, seq, role, wire_content, display_content, display_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (aside_id, seq, role, wire_content, display_content, display_id,
+        visible, tool_calls_json, tool_call_id, tool_name, tool_trace_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       asideId,
       seq,
@@ -474,6 +504,11 @@ export async function appendAsideTurn(
       turn.wireContent,
       turn.displayContent,
       turn.displayId,
+      turn.visible === false ? 0 : 1,
+      turn.toolCalls?.length ? JSON.stringify(turn.toolCalls) : null,
+      turn.toolCallId ?? null,
+      turn.toolName ?? null,
+      turn.toolTrace?.length ? JSON.stringify(turn.toolTrace) : null,
       Date.now(),
     ],
   );

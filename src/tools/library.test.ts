@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isSafeHttpUrl, resolvePdfUrl } from "./library";
+import { findPdfLinkFromHtml, isSafeHttpUrl, resolvePdfUrl } from "./library";
 
 describe("isSafeHttpUrl", () => {
   it("accepts public http(s) URLs", () => {
@@ -39,5 +39,38 @@ describe("resolvePdfUrl", () => {
     expect(resolvePdfUrl("https://example.com/a.pdf")).toBe(
       "https://example.com/a.pdf",
     );
+  });
+});
+
+describe("findPdfLinkFromHtml", () => {
+  it("prefers the citation_pdf_url meta tag", () => {
+    const html = `<meta name="citation_pdf_url" content="/pdf/paper.pdf">`;
+    expect(findPdfLinkFromHtml(html, "https://example.com/article")).toBe(
+      "https://example.com/pdf/paper.pdf",
+    );
+  });
+
+  it("falls back to a PDF link tag and anchor", () => {
+    expect(
+      findPdfLinkFromHtml(
+        `<link rel="alternate" type="application/pdf" href="https://cdn.example.com/a.pdf">`,
+        "https://example.com/article",
+      ),
+    ).toBe("https://cdn.example.com/a.pdf");
+    expect(
+      findPdfLinkFromHtml(
+        `<a href="/downloads/b.pdf?token=1">PDF</a>`,
+        "https://example.com/article",
+      ),
+    ).toBe("https://example.com/downloads/b.pdf?token=1");
+  });
+
+  it("ignores unsafe or non-PDF links", () => {
+    expect(
+      findPdfLinkFromHtml(
+        `<a href="javascript:alert(1)">x</a><a href="/page.html">html</a>`,
+        "https://example.com/",
+      ),
+    ).toBeNull();
   });
 });

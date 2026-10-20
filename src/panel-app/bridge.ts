@@ -148,6 +148,7 @@ export interface PanelBridge {
       onDelta: (text: string) => void;
       onUsage?: (usage: BridgeUsage) => void;
       onPrefixBreak?: () => void;
+      onToolTrace?: (trace: ToolTrace[]) => void;
     },
   ) => BridgeStreamJob;
   /** Persist a note on a message selection. Notes never enter the prompt. */

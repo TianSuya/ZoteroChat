@@ -20,7 +20,7 @@
 ## Features
 
 - **Discuss the current paper.** Start with a summary, methods, limitations, or key terms, then ask follow-up questions.
-- **Search beyond the paper.** The assistant can use DeepSeek Search and Fetch to check related work or publication status, then cite the pages it read. Add a search key separately or reuse the main key.
+- **Search beyond the paper.** The assistant can use DeepSeek Search and Fetch in the main thread and in **Ask about selection** overlays to check related work or publication status, then cite the pages it read. Add a search key separately or reuse the main key.
 - **Save a paper to Zotero.** When you ask it to find and download a paper, the assistant proposes the item first; nothing is written until you confirm. PDFs are validated and de-duplicated by DOI.
 - **Ask about a passage.** Highlight text to attach it to your next question, or choose **Explain selection** in the reader popup. The same popup can show a translation of the selection.
 - **Write notes on a passage.** Select text in the conversation and add a private note. Notes are marked inline and stored with the conversation; they are never sent to the model.

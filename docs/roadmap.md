@@ -11,7 +11,7 @@
 | **M4** | DB 落地（append-only）+ 会话绑定 item + 重启恢复 + 划词 popup                | ✅ sqlite 已按论文恢复主对话与副对话；划词 / 译文见 [adr/0008](adr/0008-selection-suffix.md)                                                                   |
 | **M5** | 长文固化压缩 + checkpoint 换会话 + 上下文水位提示                            | ⬜                                                                                                                                                             |
 | **M6** | Markdown + MathML、斜杠命令、导出笔记、设置面板                              | ⬜ **渲染 / 斜杠 / 设置 / 语言 / 字号 / 针对选段提问已交付**（[adr/0007](adr/0007-xhtml-html-inject.md)、[adr/0009](adr/0009-aside-overlay.md)）；导出笔记未做 |
-| **M7** | DeepSeek Search/Fetch、论文确认入库、Ask User、选段笔记                      | ✅ 主对话已接（[adr/0010](adr/0010-tools-and-notes.md)）；副对话工具/笔记、等待中的 Ask User 跨重载恢复、真实端点回归未做                                      |
+| **M7** | DeepSeek Search/Fetch、论文确认入库、Ask User、选段笔记                      | ✅ 主/副对话检索已接（[adr/0010](adr/0010-tools-and-notes.md)）；Ask User/入库/笔记仅主对话；等待中的 Ask User 跨重载恢复、真实端点回归未做                    |
 
 ## 已完成部分的遗留项
 

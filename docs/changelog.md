@@ -1,5 +1,11 @@
 # 更新记录
 
+## 0.2.1 — 2026-10-21
+
+- **副对话检索**：副对话现在也跑 Search / Fetch tool loop，结果和工具 trace 会随副对话持久化。Ask User、论文入库和笔记仍只在主对话。
+- **修复论文下载**：Zotero 的 `Attachments.downloadFile()` 成功时返回 `undefined`，之前被误判为 `Download failed.`。现在以落盘文件为准，并在 Zotero 下载器失败时用主窗口 `fetch` 兜底；HTML 落地页会读取 `citation_pdf_url`/PDF 链接再重试，错误会同时给出两个下载路径的原因。
+- **SQLite schema v3**：`zc_aside_messages` 增加 `visible`、tool calls、tool trace 列，旧库原地迁移。
+
 ## 0.2.0 — 2026-10-20
 
 - **DeepSeek Search / Fetch**：主对话可自主搜索网页、抓取页面。设置页新增搜索 key（留空复用主 key）、搜索 Base URL、联网开关和“测试搜索”。见 [adr/0010](adr/0010-tools-and-notes.md)。

@@ -23,10 +23,7 @@ import { readSearchSettings } from "../tools/settings";
 import type { AskUserRequest, PaperRequest, ToolContext } from "../tools/types";
 import { encodeUserContent } from "../ui/thread/userContent";
 import { runAgentTurn } from "./agent";
-import {
-  chatCompletionsUrl,
-  streamChatCompletions,
-} from "./client/chatCompletions";
+import { chatCompletionsUrl } from "./client/chatCompletions";
 import { buildRequestMessages, frozenPrefix } from "./prefixBuilder";
 import { PrefixLedger } from "./prefixLedger";
 import { clearSecretCache, loadApiKey } from "./secrets";
@@ -267,12 +264,21 @@ async function hydrateConversation(
       const asideTurns: ChatMessage[] = [];
       const asideMsgs: DisplayRow[] = [];
       for (const msg of row.messages) {
-        asideTurns.push({ role: msg.role, content: msg.wireContent });
-        asideMsgs.push({
-          id: msg.displayId,
-          role: msg.role === "assistant" ? "assistant" : "user",
-          content: msg.displayContent,
+        asideTurns.push({
+          role: msg.role,
+          content: msg.wireContent,
+          tool_calls: msg.toolCalls,
+          tool_call_id: msg.toolCallId,
+          name: msg.toolName,
         });
+        if (msg.visible && msg.role !== "tool") {
+          asideMsgs.push({
+            id: msg.displayId,
+            role: msg.role === "assistant" ? "assistant" : "user",
+            content: msg.displayContent,
+            toolTrace: msg.toolTrace,
+          });
+        }
       }
       asides.set(row.id, {
         id: row.id,
@@ -550,6 +556,7 @@ export function streamAsideTurn(
     onDelta: (text: string) => void;
     onUsage?: (usage: UsageSnapshot) => void;
     onPrefixBreak?: () => void;
+    onToolTrace?: (trace: ToolTrace[]) => void;
   },
 ): StreamJob {
   const win = Zotero.getMainWindow() as Window | null;
@@ -579,30 +586,67 @@ export function streamAsideTurn(
 
     const { baseUrl, model } = settings();
     const key = await loadApiKey();
-    const result = await streamChatCompletions({
+    const search = await readSearchSettings();
+    const tools = buildToolDefinitions({
+      search: search.enabled,
+      download: false,
+      askUser: false,
+    });
+
+    const item = await Zotero.Items.getAsync(itemID);
+    const parent =
+      item && item.parentID ? await Zotero.Items.getAsync(item.parentID) : item;
+    const collectionIDs = parent ? parent.getCollections() : [];
+    const ctx: ToolContext = {
+      itemID,
+      libraryID: item ? item.libraryID : Zotero.Libraries.userLibraryID,
+      collectionIDs,
+      fetch: win.fetch.bind(win),
+      searchBaseUrl: search.baseUrl,
+      searchApiKey: search.apiKey,
+      allowPaperDownloads: false,
+      askUser: () => {
+        throw new Error("Ask User is only available in the main thread.");
+      },
+      confirmPaper: () => Promise.resolve(false),
+    };
+
+    const agent = await runAgentTurn({
       fetch: win.fetch.bind(win),
       baseUrl,
       apiKey: key,
       model,
       messages,
+      tools,
+      ctx,
       signal: ac.signal,
       handlers: {
         onDelta: handlers.onDelta,
         onUsage: handlers.onUsage,
+        onToolTrace: handlers.onToolTrace,
       },
     });
-    const full = result.content;
+
+    if (asides.get(asideId) !== aside || conversations.get(itemID) !== conv) {
+      ztoolkit.log("aside turn dropped: conversation was reset");
+      return;
+    }
+
     const userWire = messages[messages.length - 1]!;
-    const assistantWire: ChatMessage = { role: "assistant", content: full };
-    aside.turns.push(userWire, assistantWire);
-    aside.ledger.commit([...messages, assistantWire]);
+    aside.turns.push(userWire, ...agent.newMessages);
+    aside.ledger.commit([...messages, ...agent.newMessages]);
 
     const userId = req.userId ?? `u-${Date.now()}`;
     const assistantId = req.assistantId ?? `a-${Date.now()}`;
     const shown = asideDisplay.get(asideId) ?? [];
     shown.push(
       { id: userId, role: "user", content: req.question },
-      { id: assistantId, role: "assistant", content: full },
+      {
+        id: assistantId,
+        role: "assistant",
+        content: agent.content,
+        toolTrace: agent.toolTrace.length ? agent.toolTrace : undefined,
+      },
     );
     asideDisplay.set(asideId, shown);
 
@@ -614,13 +658,22 @@ export function streamAsideTurn(
         displayId: userId,
         visible: true,
       });
-      await appendAsideTurn(asideId, {
-        role: "assistant",
-        wireContent: full,
-        displayContent: full,
-        displayId: assistantId,
-        visible: true,
-      });
+      for (let i = 0; i < agent.newMessages.length; i += 1) {
+        const message = agent.newMessages[i]!;
+        const isFinal = i === agent.newMessages.length - 1;
+        await appendAsideTurn(asideId, {
+          role: message.role as "user" | "assistant" | "tool",
+          wireContent: message.content,
+          displayContent: isFinal ? agent.content : "",
+          displayId: isFinal ? assistantId : "",
+          visible: isFinal,
+          toolCalls: message.tool_calls,
+          toolCallId: message.tool_call_id,
+          toolName: message.name,
+          toolTrace:
+            isFinal && agent.toolTrace.length ? agent.toolTrace : undefined,
+        });
+      }
     });
   })();
 

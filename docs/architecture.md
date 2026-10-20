@@ -117,9 +117,10 @@ tool loop → Chat Completions SSE。模型返回 `tool_calls` 时，客户端�
 「新对话」把当前会话 `archived=1`，另起一条空会话（消息行不删）。
 
 工具调用产生的中间 assistant/tool 消息也 append 进 wire history，但
-`zc_messages.visible = 0`，不渲染成气泡；最终 assistant 行的 `tool_trace_json`
-保存搜索/抓取/入库/提问的操作记录。选段笔记存在 `zc_notes`，**不进入 prompt**，
-因此写笔记不会改变前缀或缓存。
+`zc_messages.visible = 0`（副对话是 `zc_aside_messages.visible = 0`），不渲染成
+气泡；最终 assistant 行的 `tool_trace_json` 保存搜索/抓取/入库/提问的操作记录。
+主对话和副对话都跑 Search/Fetch tool loop；Ask User、入库、笔记仅主对话。
+选段笔记存在 `zc_notes`，**不进入 prompt**，因此写笔记不会改变前缀或缓存。
 
 同一 section body **换 PDF** 时拆掉旧 iframe 再建，不 reparent
 （[adr/0005](adr/0005-no-frame-reparent.md)）。
@@ -165,7 +166,7 @@ src/
   store/                  ── 持久化 ──
     db.ts                   绝对路径打开 {dataDir}/zoterochat.sqlite
                             文档 / 会话 / 消息 / 工具消息 / 副对话 / 笔记
-                            schema v2；消息只 INSERT
+                            schema v3（主/副消息都支持工具元数据）；消息只 INSERT
 
   tools/                  ── 插件侧工具 ──
     definitions.ts          发给模型的 function schema
@@ -241,6 +242,6 @@ assets/
   context/freeze.ts       超长 PDF 一次性固化压缩
   导出笔记                 助手回复写入 Zotero note
   prompt_cache_key        请求体尚未带这个字段
-  副对话工具/笔记          首版只覆盖主对话
+  副对话检索               已接 Search/Fetch；Ask User/入库/笔记仍只在主对话
   Ask User 恢复            等待中的提问不跨面板重载
 ```

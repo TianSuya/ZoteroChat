@@ -64,6 +64,13 @@ export function useAsideRuntime(
           },
           onUsage: (next) => setUsage(next),
           onPrefixBreak: () => setPrefixBreak(true),
+          onToolTrace: (trace) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantID ? { ...m, toolTrace: trace } : m,
+              ),
+            );
+          },
         },
       );
       cancelRef.current = job.cancel;
