@@ -108,6 +108,10 @@ chrome://zoterochat/content/icons/section-20.png
 | `apiBaseUrl`                | `https://api.deepseek.com` | LLM 端点                                               |
 | `apiKey`                    | `""`                       | API key（设置页填写，开发期可从 `devApiKeyFile` 预填） |
 | `model`                     | `deepseek-flash`           | 模型名（DeepSeek-V4.1-Flash）                          |
+| `searchEnabled`             | `true`                     | 向模型暴露 `search_web` / `fetch_url` 工具             |
+| `searchApiKey`              | `""`                       | Search/Fetch 专用 key，留空回退 `apiKey`               |
+| `searchBaseUrl`             | `https://api.deepseek.com` | Search/Fetch 端点；自动补 `/v1/tools/...`              |
+| `allowPaperDownloads`       | `true`                     | 允许 `add_paper_to_zotero`（每次仍会弹确认）           |
 | `replyLanguage`             | `zh-CN`                    | 回答与快捷提问的优先语言；`auto` 跟随当前问题          |
 | `fontSize`                  | `14`                       | 对话窗口正文字号（12–18）                              |
 | `devApiKeyFile`             | `""`                       | 开发期 key 文件路径，仅在 apiKey 为空时回退            |
@@ -161,6 +165,28 @@ token（`addon/content/preferences.css`）。API key 存在当前 profile 的 pr
 
 `showSelectionPopupButtons` 可关掉 popup 按钮；自动芯片不受影响。
 
+### 搜索、抓取与论文入库
+
+主对话请求带 `search_web`、`fetch_url`、`add_paper_to_zotero`、`ask_user`
+四个 function schema（前两个需搜索开关，第三个需入库开关）。模型返回
+`tool_calls` 后由 [src/tools/execute.ts](../src/tools/execute.ts) 执行：
+
+- Search：`POST {searchBaseUrl}/v1/tools/search`，Bearer 用 `searchApiKey`，
+  留空回退主 `apiKey`
+- Fetch：`POST {searchBaseUrl}/v1/tools/fetch`，正文截断到 24k 字符
+- 入库：先按 DOI 去重，再弹确认卡；确认后下载 PDF、校验大小与 `%PDF-` 魔数，
+  在 PDF 所属 library 创建 `journalArticle` + 子附件
+- 工具结果以 `role: "tool"` 追加到 wire history；中间消息 `visible=0`，只有最终
+  assistant 气泡显示工具 trace
+
+实现见 [adr/0010](adr/0010-tools-and-notes.md)。
+
+### 选段笔记
+
+主对话消息的选区浮动条有「记笔记」。笔记写入 `zc_notes`，按 message id 关联；
+原文用暖色高亮标记，点击高亮直接打开笔记；消息末尾不再堆叠笔记列表。笔记**不进入 prompt**，
+因此不会改变论文前缀或缓存。
+
 ### 持久化
 
 独立 sqlite：`{dataDir}/zoterochat.sqlite`，**必须用绝对路径**打开
@@ -170,3 +196,7 @@ token（`addon/content/preferences.css`）。API key 存在当前 profile 的 pr
 
 不写 `zotero.sqlite`。消息只 INSERT；「新对话」把当前会话 `archived=1`。
 实现见 `src/store/db.ts` 与 [adr/0004](adr/0004-append-only-store.md)。
+
+Schema v2 在 `zc_messages` 上增加 `visible`、`tool_calls_json`、
+`tool_call_id`、`tool_name`、`tool_trace_json`，并新增 `zc_notes`。旧库打开时
+用 `PRAGMA table_info` + `ALTER TABLE` 原地补列；不需要手动迁移。

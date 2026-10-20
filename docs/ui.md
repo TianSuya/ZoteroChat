@@ -69,10 +69,13 @@ bridge.theme = { mode, tokens }
     ▼
 App.tsx    写到面板 documentElement 的 style 与 data-zc-theme
     ▼
-tailwind.css  .zc-root[data-zc-theme="dark"] 覆盖暗色 token
+tailwind.css  html[data-zc-theme="dark"] .zc-root / .zc-portal 覆盖暗色 token
 ```
 
-宿主主题变化时 `frame.ts` 会推新值（`onThemeChange`）。
+宿主主题变化时 `frame.ts` 会推新值（`onThemeChange`）。暗色选择器必须从
+`html[data-zc-theme]` 出发：`data-zc-theme` 在 `documentElement` 上，不在
+`.zc-root` 上；Radix portal 在 `.zc-root` 外，所以 `.zc-portal` 也需要同一份
+覆盖。`--zc-surface-raised` 不能在两处硬编码成白色，否则暗色浮层会白底浅字。
 
 ## 布局
 
@@ -121,11 +124,26 @@ header 右侧：有消息时 hover 出「新对话」；齿轮始终可见，打
 - 主消息上留「针对选段提问 · N」标记，点开回到同一条副对话。副对话里不再开副对话。
 - 「新对话」会清掉该论文下全部副对话。
 
+## 选段笔记与 Ask User
+
+两者都复用同一套 Notion 浮层语言：`.zc-float` 不透明底、3–4px 圆角、无阴影、12/14 字号。
+
+- **选区浮动条**：`SelectionLayer` 监听主对话内的 `mouseup`，从最近的
+  `[data-zc-message-id]` 取消息，显示「记笔记」和（助手消息）「针对选段提问」。
+  用户消息只能记笔记。
+- **笔记**：原文用暖色高亮 `.zc-note-mark`；点击高亮直接打开编辑器，不再在消息末尾列笔记 chip。编辑器用 `.zc-note-editor`，支持保存/取消/删除；宽度 288px，靠近选区定位，越界时上翻。
+- **Ask User**：模型调用 `ask_user` 时，composer 上方出现 `AskUserCard`，composer
+  暂时禁用，停止按钮仍可用。快捷选项点击即提交，也支持自由文本和跳过。
+- **论文确认**：同一张卡片的另一种形态，显示标题、来源、DOI/年份/作者，明确写出
+  “将下载并创建条目”，只有确认后才写库。
+- **工具 trace**：最终助手消息下方用 `ToolTraceList` 显示搜索/阅读/入库/提问，
+  running 用旋转图标，error 用红色。trace 存在消息 metadata 里，重开 PDF 仍可见。
+
 ## 组件清单
 
 已落地（`src/ui/components/`）：`button` `tooltip` `popover` `dropdown-menu` `command`
 
-已落地（`src/ui/thread/`）：`Welcome` `UserMessage` `AssistantMessage` `Composer` `SlashMenu` `CostBar` `AsideOverlay`
+已落地（`src/ui/thread/`）：`Welcome` `UserMessage` `AssistantMessage` `Composer` `SlashMenu` `CostBar` `AsideOverlay` `AskUserCard` `ToolTrace` `SelectionLayer` `NoteEditor`
 
 助手消息走 `src/ui/markdown/`：markdown-it（`html: false`）+ KaTeX MathML（`$…$` / `$$…$$` / `\(…\)` / `\[…\]`）。**禁止 `dangerouslySetInnerHTML`**，见 [adr/0007](adr/0007-xhtml-html-inject.md)。独立公式容器 `.zc-md-eq` 下方留白给细滚动条，避免压住字形。
 
@@ -143,6 +161,8 @@ header 右侧：有消息时 hover 出「新对话」；齿轮始终可见，打
 
 - API key 用原生 `type="password"`（系统眼睛），不要再叠 Show。
 - 「优先语言」「字体大小」是 `<select>`：去掉原生箭头、自绘 chevron，否则圆角会裁掉箭头。
+- 「搜索与工具」一节：联网开关、独立搜索 key（留空复用主 key）、搜索 Base URL、
+  “允许加入 Zotero”开关；`测试搜索` 单独调用一次 Search，状态复用 `#zc-status`。
 - 字号写入 `--zc-font-size`，面板 `documentElement` 的 `fontSize` 同步，对话用 rem 相对缩放。
 - 「保存并刷新」把当前表单写入 prefs 并通知已打开的面板重读字号/语言，**不拆掉会话**。测试连接仍是另一颗按钮。按钮是 `zc-actions` 的直接子节点，避免 XUL 里嵌套 flex 把控件挤没。
 

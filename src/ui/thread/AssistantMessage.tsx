@@ -5,15 +5,22 @@ import {
   useAuiState,
 } from "@assistant-ui/react";
 import { Check, Copy, MessageSquareQuote } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
+import type { ToolTrace } from "../../llm/types";
 import { Button } from "../components/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/tooltip";
 import { MarkdownText } from "../markdown/MarkdownText";
 import { usePanelCopy } from "../ReplyLanguage";
 import { excerptQuote, useAsideActions } from "./asideContext";
+import { useNoteActions } from "./noteContext";
+import { ToolTraceList } from "./ToolTrace";
 import { wrapAsideQuotes } from "./wrapAsideQuotes";
+import { wrapNoteMarks } from "./wrapNoteMarks";
+
+/** Stable empty snapshot; a fresh [] on every selector call would churn. */
+const EMPTY_TRACE: ToolTrace[] = [];
 
 /**
  * Assistant copy is naked body text. Actions hover-reveal, except on the
@@ -23,47 +30,56 @@ import { wrapAsideQuotes } from "./wrapAsideQuotes";
  * advertise those capabilities (ADR 0004).
  */
 function AssistantMarkdown() {
-  const aside = useAsideActions();
   const messageId = useAuiState((s) => s.message.id);
+  const aside = useAsideActions();
+  const notes = useNoteActions();
+  const noteList = useMemo(
+    () => notes?.notesFor(messageId) ?? [],
+    [notes, messageId],
+  );
   const onReady = useCallback(
     (node: HTMLElement) => {
-      if (!aside) return;
-      wrapAsideQuotes(
-        node,
-        aside.markersFor(messageId).filter((m) => m.fromSelection),
-        aside.onOpen,
-      );
+      if (aside) {
+        wrapAsideQuotes(
+          node,
+          aside.markersFor(messageId).filter((m) => m.fromSelection),
+          aside.onOpen,
+        );
+      }
+      if (notes) {
+        wrapNoteMarks(node, noteList, (noteId, rect) => {
+          const note = noteList.find((item) => item.id === noteId);
+          if (note) notes.openExisting(note, rect);
+        });
+      }
     },
-    [aside, messageId],
+    [aside, messageId, noteList, notes],
   );
   return <MarkdownText onReady={onReady} />;
 }
 
 export function AssistantMessage() {
-  const aside = useAsideActions();
+  const messageId = useAuiState((s) => s.message.id);
   return (
     <MessagePrimitive.Root
       data-zc-message="assistant"
+      data-zc-message-id={messageId}
       className="group/msg relative mb-4"
     >
-      <AssistantBody aside={aside} />
+      <AssistantBody messageId={messageId} />
     </MessagePrimitive.Root>
   );
 }
 
-function AssistantBody({
-  aside,
-}: {
-  aside: ReturnType<typeof useAsideActions>;
-}) {
+function AssistantBody({ messageId }: { messageId: string }) {
   const copy = usePanelCopy();
-  const messageId = useAuiState((s) => s.message.id);
+  const aside = useAsideActions();
   const rootRef = useRef<HTMLDivElement>(null);
-  const [toolbar, setToolbar] = useState<{
-    text: string;
-    top: number;
-    left: number;
-  } | null>(null);
+  const trace = useAuiState(
+    (s) =>
+      (s.message.metadata?.custom as { toolTrace?: ToolTrace[] } | undefined)
+        ?.toolTrace ?? EMPTY_TRACE,
+  );
 
   const quoteFromMessage = useCallback(() => {
     const sel = window.getSelection();
@@ -79,70 +95,20 @@ function AssistantBody({
     return excerptQuote(rootRef.current?.innerText ?? "");
   }, []);
 
-  const onMouseUp = () => {
-    if (!aside) {
-      setToolbar(null);
-      return;
-    }
-    const sel = window.getSelection();
-    const text = sel?.toString().trim() ?? "";
-    if (
-      !text ||
-      !sel ||
-      sel.rangeCount === 0 ||
-      !rootRef.current?.contains(sel.getRangeAt(0).commonAncestorContainer)
-    ) {
-      setToolbar(null);
-      return;
-    }
-    const rect = sel.getRangeAt(0).getBoundingClientRect();
-    const root = rootRef.current.getBoundingClientRect();
-    setToolbar({
-      text: excerptQuote(text),
-      top: rect.bottom - root.top + 8,
-      left: Math.min(
-        Math.max(0, rect.left - root.left),
-        Math.max(0, root.width - 168),
-      ),
-    });
-  };
-
   const markers = aside?.markersFor(messageId) ?? [];
 
   return (
     <>
-      <div
-        ref={rootRef}
-        className="relative text-base text-fg"
-        onMouseUp={onMouseUp}
-      >
+      <div ref={rootRef} className="relative text-base text-fg">
         <MessagePrimitive.Parts components={{ Text: AssistantMarkdown }} />
         <AuiIf
           condition={(s) => Boolean(s.thread.isRunning && s.message.isLast)}
         >
           <span className="zc-caret" aria-hidden="true" />
         </AuiIf>
-        {toolbar && aside ? (
-          <div
-            className="absolute z-20"
-            style={{ top: toolbar.top, left: toolbar.left }}
-          >
-            <button
-              type="button"
-              className="zc-ask-aside-chip"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                aside.onAsk(messageId, toolbar.text, "selection");
-                setToolbar(null);
-                window.getSelection()?.removeAllRanges();
-              }}
-            >
-              <MessageSquareQuote size={14} strokeWidth={1.5} />
-              {copy.askAside}
-            </button>
-          </div>
-        ) : null}
       </div>
+
+      <ToolTraceList trace={trace} />
 
       <ActionBarPrimitive.Root
         hideWhenRunning
@@ -178,6 +144,7 @@ function AssistantBody({
           </Tooltip>
         ) : null}
       </ActionBarPrimitive.Root>
+
       {aside && markers.length === 1 ? (
         <Button
           size="sm"

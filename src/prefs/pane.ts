@@ -18,6 +18,7 @@ type AddonApi = {
     message: string;
     model?: string;
   }>;
+  testSearch: () => Promise<{ ok: boolean; message: string }>;
   clearSecretCache: () => void;
   applyToPanels: () => void;
 };
@@ -37,9 +38,18 @@ function pref(key: string): string {
   return String(Zotero.Prefs.get(`${PREFIX}.${key}`, true) ?? "");
 }
 
+function boolPref(key: string, fallback: boolean): boolean {
+  const value = Zotero.Prefs.get(`${PREFIX}.${key}`, true);
+  return typeof value === "boolean" ? value : fallback;
+}
+
 function setPref(key: string, value: string) {
   Zotero.Prefs.set(`${PREFIX}.${key}`, value, true);
   api()?.clearSecretCache();
+}
+
+function setBoolPref(key: string, value: boolean) {
+  Zotero.Prefs.set(`${PREFIX}.${key}`, value, true);
 }
 
 function setStatus(
@@ -93,6 +103,17 @@ function flushFields() {
       true,
     );
   }
+
+  const searchEnabled = el<HTMLInputElement>("zc-search-enabled");
+  if (searchEnabled) setBoolPref("searchEnabled", searchEnabled.checked);
+  const searchKey = el<HTMLInputElement>("zc-search-api-key");
+  if (searchKey) setPref("searchApiKey", searchKey.value.trim());
+  const searchBase = el<HTMLInputElement>("zc-search-base-url");
+  if (searchBase) setPref("searchBaseUrl", searchBase.value.trim());
+  const allowDownloads = el<HTMLInputElement>("zc-allow-paper-downloads");
+  if (allowDownloads) {
+    setBoolPref("allowPaperDownloads", allowDownloads.checked);
+  }
 }
 
 function apply() {
@@ -115,6 +136,31 @@ async function test() {
     }
     if (result.ok) {
       setStatus("ok", "status-ok", { model: result.model || result.message });
+    } else {
+      setStatus("error", "status-fail", { detail: result.message });
+    }
+  } catch (err) {
+    setStatus("error", "status-fail", {
+      detail: String((err as Error)?.message ?? err),
+    });
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function testSearch() {
+  flushFields();
+  const button = el<HTMLButtonElement>("zc-test-search");
+  if (button) button.disabled = true;
+  setStatus("checking", "status-checking-search");
+  try {
+    const result = await api()?.testSearch();
+    if (!result) {
+      setStatus("error", "status-fail", { detail: "plugin not ready" });
+      return;
+    }
+    if (result.ok) {
+      setStatus("ok", "status-search-ok", { detail: result.message });
     } else {
       setStatus("error", "status-fail", { detail: result.message });
     }
@@ -194,15 +240,40 @@ function init() {
     });
   }
 
-  el<HTMLButtonElement>("zc-apply")?.addEventListener("click", () => {
-    apply();
-  });
-  el<HTMLButtonElement>("zc-test")?.addEventListener("click", () => {
-    void test();
-  });
+  const searchEnabled = el<HTMLInputElement>("zc-search-enabled");
+  if (searchEnabled) {
+    searchEnabled.checked = boolPref("searchEnabled", true);
+    searchEnabled.addEventListener("change", () =>
+      setBoolPref("searchEnabled", searchEnabled.checked),
+    );
+  }
+  for (const [id, key] of [
+    ["zc-search-api-key", "searchApiKey"],
+    ["zc-search-base-url", "searchBaseUrl"],
+  ] as const) {
+    const input = el<HTMLInputElement>(id);
+    if (!input) continue;
+    input.value = pref(key);
+    if (key === "searchBaseUrl" && !input.value) {
+      input.value = "https://api.deepseek.com";
+    }
+    input.addEventListener("change", () => setPref(key, input.value.trim()));
+    input.addEventListener("blur", () => setPref(key, input.value.trim()));
+  }
+  const allowDownloads = el<HTMLInputElement>("zc-allow-paper-downloads");
+  if (allowDownloads) {
+    allowDownloads.checked = boolPref("allowPaperDownloads", true);
+    allowDownloads.addEventListener("change", () =>
+      setBoolPref("allowPaperDownloads", allowDownloads.checked),
+    );
+  }
+
+  // Apply / test buttons use inline `onclick` in preferences.xhtml. Binding
+  // them here as well would fire every action twice (and bill every search
+  // twice), so the inline fallback is the only handler.
 }
 
-const ZoteroChat_Preferences = { init, test, apply };
+const ZoteroChat_Preferences = { init, test, testSearch, apply };
 const root = typeof window !== "undefined" ? window : globalThis;
 (
   root as unknown as { ZoteroChat_Preferences: typeof ZoteroChat_Preferences }

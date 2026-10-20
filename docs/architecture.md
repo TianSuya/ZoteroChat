@@ -78,13 +78,19 @@ interface PanelBridge {
   env: "development" | "production";
   showProbe: boolean;
   showAssistantProbe: boolean;
-  beginConversation: () => Promise<BridgePaperStatus>;
+  beginConversation: () => Promise<BridgeSession>;
+  resetConversation: () => Promise<BridgeSession>;
   streamTurn: (req, handlers) => BridgeStreamJob;
+  // handlers: onDelta / onUsage / onPrefixBreak / onToolTrace /
+  //           onAskUser / onConfirmPaper
   beginAside: (req: { id: string; quote: string }) => void;
   streamAsideTurn: (
     req: { asideId: string; question: string },
     handlers,
   ) => BridgeStreamJob;
+  saveNote: (req) => Promise<BridgeNote>;
+  updateNote: (req) => Promise<BridgeNote | null>;
+  deleteNote: (id: string) => Promise<void>;
   openPreferences: () => void;
   getUiLanguage: () => UiLanguage;
   onUiLanguageChange?: (listener) => () => void;
@@ -101,12 +107,19 @@ interface PanelBridge {
 ```
 
 发一轮：面板 `useThreadRuntime` 把**芯片上的选区**（用户叉掉则为 `null`）和问题交给
-`streamTurn` → `prefixBuilder` 组装 `[0..2] + 历史 + 当前轮` → Chat Completions SSE。
+`streamTurn` → `prefixBuilder` 组装 `[0..2] + 历史 + 当前轮` → `llm/agent.ts` 的
+tool loop → Chat Completions SSE。模型返回 `tool_calls` 时，客户端执行工具、追加
+`role: "tool"` 结果，再请求模型；最多 6 轮。
 `fetch` 走主窗口（bootstrap 沙箱没有 browsing context），API key 留在插件侧。
 默认端点 DeepSeek，`thinking: { type: "disabled" }`。
 插件 `session.ts` 按附件保存 wire-format 轮次和冻结前缀，并写入 profile 下的
 `zoterochat.sqlite`。重开 Zotero / 再打开同一 PDF 会恢复主对话和副对话。
 「新对话」把当前会话 `archived=1`，另起一条空会话（消息行不删）。
+
+工具调用产生的中间 assistant/tool 消息也 append 进 wire history，但
+`zc_messages.visible = 0`，不渲染成气泡；最终 assistant 行的 `tool_trace_json`
+保存搜索/抓取/入库/提问的操作记录。选段笔记存在 `zc_notes`，**不进入 prompt**，
+因此写笔记不会改变前缀或缓存。
 
 同一 section body **换 PDF** 时拆掉旧 iframe 再建，不 reparent
 （[adr/0005](adr/0005-no-frame-reparent.md)）。
@@ -132,6 +145,8 @@ src/
   ui/                     ── 面板侧 UI ──
     Thread.tsx              assistant-ui Thread（header / 消息区 / composer / 成本条）
     thread/                 Welcome / Message / Composer / SlashMenu / CostBar
+                            AskUserCard / ToolTrace / SelectionLayer
+                            NoteEditor / noteContext
     markdown/               markdown-it + KaTeX MathML
                             render.ts / mathPlugin.ts / MarkdownText.tsx / SafeHtml.tsx
                             setHtml.ts：禁止 innerHTML，DOMParser + 有限 importNode
@@ -144,11 +159,21 @@ src/
 
   runtime/                ── 面板侧对话运行时 ──
     externalStore.ts        展示用历史 + 把回合交给插件 streamTurn
+                            + 工具 trace / Ask User / 论文确认
     asideStore.ts           副对话 overlay 的独立 runtime
 
   store/                  ── 持久化 ──
     db.ts                   绝对路径打开 {dataDir}/zoterochat.sqlite
-                            文档 / 会话 / 消息 / 副对话；消息只 INSERT
+                            文档 / 会话 / 消息 / 工具消息 / 副对话 / 笔记
+                            schema v2；消息只 INSERT
+
+  tools/                  ── 插件侧工具 ──
+    definitions.ts          发给模型的 function schema
+    search.ts               DeepSeek Search / Fetch REST
+    library.ts              PDF 下载、校验、DOI 去重、Zotero 入库
+    execute.ts              一次 tool call 的执行 + trace + 错误恢复
+    settings.ts             Search key / base URL / 入库开关
+    types.ts                工具上下文与结果类型
 
   translate/              ── 划词弹窗翻译 ──
     index.ts / engines/     Google / DeepL / Google Cloud / Azure / 对话模型
@@ -159,11 +184,13 @@ src/
 
   llm/                    ── 插件侧 ──
     session.ts              按附件打开/归档会话 + sqlite 落盘 + streamTurn / beginAside
+    agent.ts                tool loop、usage 聚合、tool trace
     prefixBuilder.ts        分层组装 [0..n+1]
     prefixLedger.ts         hash 比对 + prefix_break
-    prompts.ts              冻结 system（含 LaTeX 约定）+ ACK
+    prompts.ts              冻结 system（含 LaTeX 约定与工具策略）+ ACK
     stableStringify.ts / usage.ts / types.ts / secrets.ts
-    client/chatCompletions.ts  SSE；主窗口 fetch；thinking disabled
+    client/chatCompletions.ts  SSE；主窗口 fetch；thinking disabled；tool_calls
+    client/toolCallDelta.ts    流式 tool_calls 拼装
     client/sse.ts
 
   i18n/                   ── 语言包 ──
@@ -204,7 +231,7 @@ assets/
   logo-h.png              横标（GitHub README）
 ```
 
-`runtime/externalStore.ts` 打开面板时从插件拉回已保存的展示历史。发请求时面板把当前问题交给插件，由 `llm/session.ts` 组装冻结前缀 + append-only 轮次，再走 Chat Completions SSE，并写入 sqlite。API key 写在设置页（profile prefs），开发期若为空则回退 `devApiKeyFile`。
+`runtime/externalStore.ts` 打开面板时从插件拉回已保存的展示历史、副对话和笔记。发请求时面板把当前问题交给插件，由 `llm/session.ts` 组装冻结前缀 + append-only 轮次，再由 `llm/agent.ts` 跑 tool loop、写入 sqlite。API key 写在设置页（profile prefs），开发期若为空则回退 `devApiKeyFile`。Search/Fetch 的 key 可单独填写，留空回退主 key。
 
 ## 尚未实现
 
@@ -214,4 +241,6 @@ assets/
   context/freeze.ts       超长 PDF 一次性固化压缩
   导出笔记                 助手回复写入 Zotero note
   prompt_cache_key        请求体尚未带这个字段
+  副对话工具/笔记          首版只覆盖主对话
+  Ask User 恢复            等待中的提问不跨面板重载
 ```

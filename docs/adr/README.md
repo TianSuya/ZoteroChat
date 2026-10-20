@@ -13,6 +13,7 @@
 | [0007](0007-xhtml-html-inject.md) | XHTML 面板禁止 innerHTML 灌 MathML       | 已采纳                                                        |
 | [0008](0008-selection-suffix.md)  | 选区只属当前轮，芯片是发送真相           | 已采纳                                                        |
 | [0009](0009-aside-overlay.md)     | 副对话是主对话上的一层，分叉复用论文前缀 | 已采纳                                                        |
+| [0010](0010-tools-and-notes.md)   | 工具调用、确认入库、Ask User 与选段笔记  | 已采纳（主对话；工具消息 append-only，笔记不进 prompt）       |
 
 ## 写一份新的
 

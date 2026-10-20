@@ -94,6 +94,61 @@
     </html:section>
 
     <html:section class="zc-prefs-section">
+      <html:h2 class="zc-prefs-heading" data-l10n-id="prefs-tools">Search &amp; tools</html:h2>
+      <html:p class="zc-hint" data-l10n-id="prefs-tools-lead">
+        DeepSeek Search and Fetch let the assistant look beyond the paper. Search is billed per successful request, not per token.
+      </html:p>
+
+      <html:label class="zc-check" for="zc-search-enabled">
+        <html:input id="zc-search-enabled" class="zc-checkbox" type="checkbox"/>
+        <html:span class="zc-check-text">
+          <html:span class="zc-label" data-l10n-id="prefs-search-enabled">Web search</html:span>
+          <html:span class="zc-hint" data-l10n-id="prefs-search-enabled-hint">
+            Let the assistant search the web and read pages when the paper alone is not enough.
+          </html:span>
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-search-api-key">
+        <html:span class="zc-label" data-l10n-id="prefs-search-api-key">Search API key</html:span>
+        <html:input
+          id="zc-search-api-key"
+          class="zc-input"
+          type="password"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <html:span class="zc-hint" data-l10n-id="prefs-search-api-key-hint">
+          Optional. Leave empty to reuse the API key above. Search and Fetch use the same DeepSeek account.
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-field" for="zc-search-base-url">
+        <html:span class="zc-label" data-l10n-id="prefs-search-base-url">Search Base URL</html:span>
+        <html:input
+          id="zc-search-base-url"
+          class="zc-input"
+          type="url"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <html:span class="zc-hint" data-l10n-id="prefs-search-base-url-hint">
+          Default: https://api.deepseek.com. /v1/tools/search and /v1/tools/fetch are appended.
+        </html:span>
+      </html:label>
+
+      <html:label class="zc-check" for="zc-allow-paper-downloads">
+        <html:input id="zc-allow-paper-downloads" class="zc-checkbox" type="checkbox"/>
+        <html:span class="zc-check-text">
+          <html:span class="zc-label" data-l10n-id="prefs-allow-paper-downloads">Add papers to Zotero</html:span>
+          <html:span class="zc-hint" data-l10n-id="prefs-allow-paper-downloads-hint">
+            Let the assistant download a paper after you confirm it. Every write asks first.
+          </html:span>
+        </html:span>
+      </html:label>
+    </html:section>
+
+    <html:section class="zc-prefs-section">
       <html:h2 class="zc-prefs-heading" data-l10n-id="prefs-translate">Translation</html:h2>
       <html:p class="zc-hint" data-l10n-id="prefs-translate-lead">
         Shown in the PDF selection popup. Target language follows Preferred language above.
@@ -192,6 +247,13 @@
           data-l10n-id="prefs-test"
           onclick="ZoteroChat_Preferences.test()"
         >测试连接</html:button>
+        <html:button
+          id="zc-test-search"
+          class="zc-btn"
+          type="button"
+          data-l10n-id="prefs-test-search"
+          onclick="ZoteroChat_Preferences.testSearch()"
+        >测试搜索</html:button>
         <html:p id="zc-status" class="zc-status" data-l10n-id="prefs-status-idle"></html:p>
       </html:div>
     </html:section>

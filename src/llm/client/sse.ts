@@ -24,6 +24,14 @@ export async function* readSseData(
         yield data;
       }
     }
+
+    // A server that ends without a trailing newline still has one final event.
+    buf += decoder.decode();
+    const tail = buf.trim();
+    if (tail.startsWith("data:")) {
+      const data = tail.slice(5).trim();
+      if (data && data !== "[DONE]") yield data;
+    }
   } finally {
     reader.releaseLock();
   }

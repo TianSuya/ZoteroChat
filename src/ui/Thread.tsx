@@ -9,9 +9,11 @@ import {
   TooltipTrigger,
 } from "./components/tooltip";
 import { AssistantMessage } from "./thread/AssistantMessage";
-import type { BridgeUsage } from "../panel-app/bridge";
+import type { BridgePendingPrompt, BridgeUsage } from "../panel-app/bridge";
+import { AskUserCard } from "./thread/AskUserCard";
 import { Composer, type SelectionChip } from "./thread/Composer";
 import { CostBar } from "./thread/CostBar";
+import { SelectionLayer } from "./thread/SelectionLayer";
 import { UserMessage } from "./thread/UserMessage";
 import { usePanelCopy } from "./ReplyLanguage";
 import { Welcome } from "./thread/Welcome";
@@ -29,6 +31,9 @@ export interface ThreadProps {
   prefixBreak?: boolean;
   paperError?: string | null;
   paperLoading?: boolean;
+  pendingPrompt?: BridgePendingPrompt | null;
+  onAnswerPrompt?: (value: string | boolean) => void;
+  onSkipPrompt?: () => void;
   /** Dev-only probes, rendered outside the thread chrome. */
   children?: React.ReactNode;
 }
@@ -52,12 +57,19 @@ export function Thread({
   prefixBreak,
   paperError,
   paperLoading,
+  pendingPrompt = null,
+  onAnswerPrompt,
+  onSkipPrompt,
   children,
 }: ThreadProps) {
   const copy = usePanelCopy();
   return (
     <TooltipProvider delayDuration={200}>
-      <ThreadPrimitive.Root className="group flex h-full min-h-0 flex-col bg-surface">
+      <ThreadPrimitive.Root
+        data-zc-thread="main"
+        className="group flex h-full min-h-0 flex-col bg-surface"
+      >
+        <SelectionLayer />
         <header className="flex h-8 shrink-0 items-center gap-1 px-2">
           <span
             className="truncate text-sm font-medium text-fg-muted"
@@ -117,7 +129,16 @@ export function Thread({
         </ThreadPrimitive.Viewport>
 
         <footer className="shrink-0 px-3 pb-2 pt-1">
-          <Composer selection={selection} onClearSelection={onClearSelection} />
+          <AskUserCard
+            prompt={pendingPrompt}
+            onAnswer={(value) => onAnswerPrompt?.(value)}
+            onSkip={() => onSkipPrompt?.()}
+          />
+          <Composer
+            selection={selection}
+            onClearSelection={onClearSelection}
+            disabled={Boolean(pendingPrompt)}
+          />
           <CostBar
             usage={usage}
             charCount={charCount}

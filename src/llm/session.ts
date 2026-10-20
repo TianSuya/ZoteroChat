@@ -5,15 +5,24 @@ import {
   appendAsideTurn,
   appendTurn,
   archiveConversation,
+  deleteNote as deleteNoteRow,
   insertAside,
   insertConversation,
+  insertNote,
   loadActiveConversation,
   loadAsides,
   loadDocument,
+  loadNotes,
   loadTurns,
   saveDocument,
+  updateNote as updateNoteRow,
 } from "../store/db";
+import { buildToolDefinitions } from "../tools/definitions";
+import { searchWeb } from "../tools/search";
+import { readSearchSettings } from "../tools/settings";
+import type { AskUserRequest, PaperRequest, ToolContext } from "../tools/types";
 import { encodeUserContent } from "../ui/thread/userContent";
+import { runAgentTurn } from "./agent";
 import {
   chatCompletionsUrl,
   streamChatCompletions,
@@ -24,11 +33,20 @@ import { clearSecretCache, loadApiKey } from "./secrets";
 import type {
   ChatMessage,
   LoadedAside,
+  LoadedNote,
   PaperStatus,
   Selection,
   SessionSnapshot,
+  ToolTrace,
   UsageSnapshot,
 } from "./types";
+
+type DisplayRow = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  toolTrace?: ToolTrace[];
+};
 
 type Conversation = {
   itemID: number;
@@ -50,15 +68,12 @@ type Aside = {
 
 const papers = new Map<number, PaperRecord>();
 const conversations = new Map<number, Conversation>();
+const hydrating = new Map<number, Promise<Conversation>>();
+const epochs = new Map<number, number>();
 const asides = new Map<string, Aside>();
-const mainDisplay = new Map<
-  number,
-  { id: string; role: "user" | "assistant"; content: string }[]
->();
-const asideDisplay = new Map<
-  string,
-  { id: string; role: "user" | "assistant"; content: string }[]
->();
+const mainDisplay = new Map<number, DisplayRow[]>();
+const asideDisplay = new Map<string, DisplayRow[]>();
+const mainNotes = new Map<number, LoadedNote[]>();
 const asideMeta = new Map<
   string,
   { sourceMessageId: string; fromSelection: boolean }
@@ -109,6 +124,7 @@ function snapshotOf(conv: Conversation): SessionSnapshot {
     ...paperStatus(conv.paper),
     messages: mainDisplay.get(conv.itemID) ?? [],
     asides: asideList,
+    notes: mainNotes.get(conv.itemID) ?? [],
   };
 }
 
@@ -183,7 +199,13 @@ function dropAsidesFor(itemID: number) {
   }
 }
 
-async function hydrateConversation(itemID: number): Promise<Conversation> {
+async function hydrateConversation(
+  itemID: number,
+  epoch: number,
+): Promise<Conversation> {
+  if ((epochs.get(itemID) ?? 0) !== epoch) {
+    throw new Error("Conversation was reset while loading.");
+  }
   await ensurePaper(itemID);
   const paper = papers.get(itemID)!;
   const prefix = frozenPrefix(paper.metadata, paper.text);
@@ -197,18 +219,32 @@ async function hydrateConversation(itemID: number): Promise<Conversation> {
   }
 
   const turns: ChatMessage[] = [];
-  const display: { id: string; role: "user" | "assistant"; content: string }[] =
-    [];
+  const display: DisplayRow[] = [];
+  let notes: LoadedNote[] = [];
   if (dbId != null) {
     const stored = await loadTurns(dbId);
     for (const row of stored) {
-      turns.push({ role: row.role, content: row.wireContent });
-      display.push({
-        id: row.displayId,
+      turns.push({
         role: row.role,
-        content: row.displayContent,
+        content: row.wireContent,
+        tool_calls: row.toolCalls,
+        tool_call_id: row.toolCallId,
+        name: row.toolName,
       });
+      if (row.visible && row.role !== "tool") {
+        display.push({
+          id: row.displayId,
+          role: row.role,
+          content: row.displayContent,
+          toolTrace: row.toolTrace,
+        });
+      }
     }
+    notes = await loadNotes(dbId);
+  }
+
+  if ((epochs.get(itemID) ?? 0) !== epoch) {
+    throw new Error("Conversation was reset while loading.");
   }
 
   const conv: Conversation = {
@@ -221,6 +257,7 @@ async function hydrateConversation(itemID: number): Promise<Conversation> {
   };
   conversations.set(itemID, conv);
   mainDisplay.set(itemID, display);
+  mainNotes.set(itemID, notes);
 
   dropAsidesFor(itemID);
   if (dbId != null) {
@@ -228,16 +265,12 @@ async function hydrateConversation(itemID: number): Promise<Conversation> {
     for (const row of loaded) {
       const forkTurns = turns.slice(0, row.forkSeq);
       const asideTurns: ChatMessage[] = [];
-      const asideMsgs: {
-        id: string;
-        role: "user" | "assistant";
-        content: string;
-      }[] = [];
+      const asideMsgs: DisplayRow[] = [];
       for (const msg of row.messages) {
         asideTurns.push({ role: msg.role, content: msg.wireContent });
         asideMsgs.push({
           id: msg.displayId,
-          role: msg.role,
+          role: msg.role === "assistant" ? "assistant" : "user",
           content: msg.displayContent,
         });
       }
@@ -265,7 +298,20 @@ export async function beginConversation(
 ): Promise<SessionSnapshot> {
   const mem = conversations.get(itemID);
   if (mem) return snapshotOf(mem);
-  const conv = await hydrateConversation(itemID);
+
+  // The panel calls this on mount while a quick prompt may already have
+  // started a turn. Share one hydration so two callers cannot create two
+  // active conversations for the same PDF.
+  let pending = hydrating.get(itemID);
+  if (!pending) {
+    pending = hydrateConversation(itemID, epochs.get(itemID) ?? 0).finally(
+      () => {
+        if (hydrating.get(itemID) === pending) hydrating.delete(itemID);
+      },
+    );
+    hydrating.set(itemID, pending);
+  }
+  const conv = await pending;
   return snapshotOf(conv);
 }
 
@@ -273,6 +319,8 @@ export async function beginConversation(
 export async function resetConversation(
   itemID: number,
 ): Promise<SessionSnapshot> {
+  epochs.set(itemID, (epochs.get(itemID) ?? 0) + 1);
+  hydrating.delete(itemID);
   const mem = conversations.get(itemID);
   if (mem?.dbId != null) {
     await persistQuiet("archive", () => archiveConversation(mem.dbId!));
@@ -294,6 +342,7 @@ export async function resetConversation(
   };
   conversations.set(itemID, conv);
   mainDisplay.set(itemID, []);
+  mainNotes.set(itemID, []);
   return snapshotOf(conv);
 }
 
@@ -358,6 +407,9 @@ export function streamTurn(
     onDelta: (text: string) => void;
     onUsage?: (usage: UsageSnapshot) => void;
     onPrefixBreak?: () => void;
+    onToolTrace?: (trace: ToolTrace[]) => void;
+    onAskUser?: (req: AskUserRequest) => Promise<string>;
+    onConfirmPaper?: (req: PaperRequest) => Promise<boolean>;
   },
 ): StreamJob {
   const win = Zotero.getMainWindow() as Window | null;
@@ -386,34 +438,72 @@ export function streamTurn(
 
     const { baseUrl, model } = settings();
     const key = await loadApiKey();
-    const full = await streamChatCompletions({
+    const search = await readSearchSettings();
+    const tools = buildToolDefinitions({
+      search: search.enabled,
+      download: search.allowPaperDownloads,
+    });
+
+    const item = await Zotero.Items.getAsync(itemID);
+    const parent =
+      item && item.parentID ? await Zotero.Items.getAsync(item.parentID) : item;
+    const collectionIDs = parent ? parent.getCollections() : [];
+    const ctx: ToolContext = {
+      itemID,
+      libraryID: item ? item.libraryID : Zotero.Libraries.userLibraryID,
+      collectionIDs,
+      fetch: win.fetch.bind(win),
+      searchBaseUrl: search.baseUrl,
+      searchApiKey: search.apiKey,
+      allowPaperDownloads: search.allowPaperDownloads,
+      askUser: (ask) => {
+        if (!handlers.onAskUser) throw new Error("This panel cannot ask.");
+        return handlers.onAskUser(ask);
+      },
+      confirmPaper: (paper) => {
+        if (!handlers.onConfirmPaper) return Promise.resolve(false);
+        return handlers.onConfirmPaper(paper);
+      },
+    };
+
+    const agent = await runAgentTurn({
       fetch: win.fetch.bind(win),
       baseUrl,
       apiKey: key,
       model,
       messages,
+      tools,
+      ctx,
       signal: ac.signal,
       handlers: {
         onDelta: handlers.onDelta,
         onUsage: handlers.onUsage,
+        onToolTrace: handlers.onToolTrace,
       },
     });
+
     const userWire = messages[messages.length - 1]!;
-    const assistantWire: ChatMessage = { role: "assistant", content: full };
-    conv.turns.push(userWire, assistantWire);
-    conv.ledger.commit([...messages, assistantWire]);
+    if (conversations.get(itemID) !== conv) {
+      // The user started a new conversation while this stream was running.
+      // Do not leak the old turn into the new thread.
+      ztoolkit.log("turn dropped: conversation was reset");
+      return;
+    }
+    conv.turns.push(userWire, ...agent.newMessages);
+    conv.ledger.commit([...messages, ...agent.newMessages]);
 
     const userId = req.userId ?? `u-${Date.now()}`;
     const assistantId = req.assistantId ?? `a-${Date.now()}`;
-    const userDisplay = {
+    const userDisplay: DisplayRow = {
       id: userId,
-      role: "user" as const,
+      role: "user",
       content: encodeUserContent(req.question, req.selection),
     };
-    const assistantDisplay = {
+    const assistantDisplay: DisplayRow = {
       id: assistantId,
-      role: "assistant" as const,
-      content: full,
+      role: "assistant",
+      content: agent.content,
+      toolTrace: agent.toolTrace.length ? agent.toolTrace : undefined,
     };
     const shown = mainDisplay.get(itemID) ?? [];
     shown.push(userDisplay, assistantDisplay);
@@ -427,13 +517,24 @@ export function streamTurn(
           wireContent: userWire.content,
           displayContent: userDisplay.content,
           displayId: userId,
+          visible: true,
         });
-        await appendTurn(dbId, {
-          role: "assistant",
-          wireContent: full,
-          displayContent: full,
-          displayId: assistantId,
-        });
+        for (let i = 0; i < agent.newMessages.length; i += 1) {
+          const message = agent.newMessages[i]!;
+          const isFinal = i === agent.newMessages.length - 1;
+          await appendTurn(dbId, {
+            role: message.role as "user" | "assistant" | "tool",
+            wireContent: message.content,
+            displayContent: isFinal ? agent.content : "",
+            displayId: isFinal ? assistantId : "",
+            visible: isFinal,
+            toolCalls: message.tool_calls,
+            toolCallId: message.tool_call_id,
+            toolName: message.name,
+            toolTrace:
+              isFinal && agent.toolTrace.length ? agent.toolTrace : undefined,
+          });
+        }
       });
     }
   })();
@@ -478,7 +579,7 @@ export function streamAsideTurn(
 
     const { baseUrl, model } = settings();
     const key = await loadApiKey();
-    const full = await streamChatCompletions({
+    const result = await streamChatCompletions({
       fetch: win.fetch.bind(win),
       baseUrl,
       apiKey: key,
@@ -490,6 +591,7 @@ export function streamAsideTurn(
         onUsage: handlers.onUsage,
       },
     });
+    const full = result.content;
     const userWire = messages[messages.length - 1]!;
     const assistantWire: ChatMessage = { role: "assistant", content: full };
     aside.turns.push(userWire, assistantWire);
@@ -510,17 +612,120 @@ export function streamAsideTurn(
         wireContent: userWire.content,
         displayContent: req.question,
         displayId: userId,
+        visible: true,
       });
       await appendAsideTurn(asideId, {
         role: "assistant",
         wireContent: full,
         displayContent: full,
         displayId: assistantId,
+        visible: true,
       });
     });
   })();
 
   return { cancel: () => ac.abort(), done };
+}
+
+export async function saveNote(
+  itemID: number,
+  req: { id: string; messageId: string; quote: string; note: string },
+): Promise<LoadedNote> {
+  const conv = conversations.get(itemID);
+  if (!conv) throw new Error("Open the conversation before adding a note.");
+  const quote = req.quote.trim();
+  const body = req.note.trim();
+  if (!quote) throw new Error("Note quote is empty.");
+  if (!body) throw new Error("Note text is empty.");
+
+  let note: LoadedNote;
+  if (conv.dbId != null) {
+    note = await insertNote(conv.dbId, {
+      id: req.id,
+      messageId: req.messageId,
+      quote,
+      note: body,
+    });
+  } else {
+    const now = Date.now();
+    note = {
+      id: req.id,
+      messageId: req.messageId,
+      quote,
+      note: body,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  const notes = mainNotes.get(itemID) ?? [];
+  notes.push(note);
+  mainNotes.set(itemID, notes);
+  return note;
+}
+
+export async function updateNote(
+  itemID: number,
+  req: { id: string; note: string },
+): Promise<LoadedNote | null> {
+  const conv = conversations.get(itemID);
+  if (!conv) throw new Error("Open the conversation before editing a note.");
+  const body = req.note.trim();
+  if (!body) throw new Error("Note text is empty.");
+
+  let updated: LoadedNote | null = null;
+  if (conv.dbId != null) {
+    updated = await updateNoteRow(req.id, body);
+  }
+  const notes = mainNotes.get(itemID) ?? [];
+  const index = notes.findIndex((note) => note.id === req.id);
+  if (index < 0) return updated;
+  const next: LoadedNote = updated ?? {
+    ...notes[index]!,
+    note: body,
+    updatedAt: Date.now(),
+  };
+  notes[index] = next;
+  mainNotes.set(itemID, notes);
+  return next;
+}
+
+export async function deleteNote(itemID: number, id: string): Promise<void> {
+  const conv = conversations.get(itemID);
+  if (!conv) return;
+  if (conv.dbId != null) await deleteNoteRow(id);
+  const notes = mainNotes.get(itemID) ?? [];
+  mainNotes.set(
+    itemID,
+    notes.filter((note) => note.id !== id),
+  );
+}
+
+export async function testSearchConnection(): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  try {
+    const search = await readSearchSettings();
+    if (!search.apiKey) {
+      return { ok: false, message: "No search API key or main API key." };
+    }
+    const win = Zotero.getMainWindow() as Window | null;
+    if (!win) return { ok: false, message: "No Zotero window." };
+    const results = await searchWeb({
+      fetch: win.fetch.bind(win),
+      baseUrl: search.baseUrl,
+      apiKey: search.apiKey,
+      query: "DeepSeek API",
+      count: 1,
+    });
+    return {
+      ok: true,
+      message: `${results.length} result${results.length === 1 ? "" : "s"}`,
+    };
+  } catch (err) {
+    return { ok: false, message: String((err as Error)?.message ?? err) };
+  }
 }
 
 export async function testConnection(): Promise<{

@@ -71,6 +71,25 @@
   gap: 4px;
 }
 
+.zc-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.zc-checkbox {
+  width: 14px;
+  height: 14px;
+  margin: 2px 0 0;
+  accent-color: var(--zc-accent);
+}
+
+.zc-check-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .zc-label {
   font-size: 12px;
   line-height: 18px;

@@ -58,10 +58,12 @@ export function Composer({
   selection,
   onClearSelection,
   placeholder,
+  disabled = false,
 }: {
   selection?: SelectionChip | null;
   onClearSelection?: () => void;
   placeholder?: string;
+  disabled?: boolean;
 }) {
   const copy = usePanelCopy();
   return (
@@ -69,7 +71,7 @@ export function Composer({
       compact
       className="relative rounded-md bg-surface-subtle px-2 py-1.5"
     >
-      <SlashMenu />
+      {disabled ? null : <SlashMenu />}
       {selection ? (
         <SelectionBanner
           selection={selection}
@@ -85,13 +87,16 @@ export function Composer({
           maxRows={8}
           autoFocus
           submitMode="enter"
+          disabled={disabled}
           placeholder={
-            placeholder ??
-            (selection
-              ? copy.composerPlaceholderSelection
-              : copy.composerPlaceholder)
+            disabled
+              ? copy.composerAsking
+              : (placeholder ??
+                (selection
+                  ? copy.composerPlaceholderSelection
+                  : copy.composerPlaceholder))
           }
-          className="max-h-40 min-h-[24px] flex-1 resize-none bg-transparent py-0.5 text-base text-fg outline-none placeholder:text-fg-faint"
+          className="max-h-40 min-h-[24px] flex-1 resize-none bg-transparent py-0.5 text-base text-fg outline-none placeholder:text-fg-faint disabled:opacity-60"
         />
         <AuiIf condition={(s) => !s.thread.isRunning}>
           <Tooltip>
@@ -102,6 +107,7 @@ export function Composer({
                   size="icon"
                   className="h-6 w-6 shrink-0"
                   aria-label={copy.send}
+                  disabled={disabled}
                 >
                   <ArrowUp size={14} strokeWidth={1.5} />
                 </Button>

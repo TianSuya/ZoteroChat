@@ -11,6 +11,7 @@
 | **M4** | DB 落地（append-only）+ 会话绑定 item + 重启恢复 + 划词 popup                | ✅ sqlite 已按论文恢复主对话与副对话；划词 / 译文见 [adr/0008](adr/0008-selection-suffix.md)                                                                   |
 | **M5** | 长文固化压缩 + checkpoint 换会话 + 上下文水位提示                            | ⬜                                                                                                                                                             |
 | **M6** | Markdown + MathML、斜杠命令、导出笔记、设置面板                              | ⬜ **渲染 / 斜杠 / 设置 / 语言 / 字号 / 针对选段提问已交付**（[adr/0007](adr/0007-xhtml-html-inject.md)、[adr/0009](adr/0009-aside-overlay.md)）；导出笔记未做 |
+| **M7** | DeepSeek Search/Fetch、论文确认入库、Ask User、选段笔记                      | ✅ 主对话已接（[adr/0010](adr/0010-tools-and-notes.md)）；副对话工具/笔记、等待中的 Ask User 跨重载恢复、真实端点回归未做                                      |
 
 ## 已完成部分的遗留项
 
@@ -23,6 +24,9 @@
 | **热重载不重载 iframe 文档**   | 改面板代码后有时需要完整重启。开发夹具会切 tab 强制重建 section 来缓解                               |
 | **空状态排版**                 | 窄窗口下提示文字会被 composer 边缘裁到。M6 重排时一并处理                                            |
 | **assistant-ui MCP 未接入**    | 官方提供 `https://www.assistant-ui.com/mcp`，接上后查 API 更可靠，目前靠 `/llms-full.txt`            |
+| **Search/Fetch 未做真实回归**  | 单元测试覆盖协议与解析；真实 DeepSeek 端点、计费、QPS、非 DeepSeek 兼容端点仍需手工验证              |
+| **论文下载只覆盖常见来源**     | arXiv abs→pdf、OpenReview forum→pdf、直链 PDF；需要登录或跳转的出版商页面可能失败                    |
+| **笔记不导出、不同步**         | `zc_notes` 只存当前 profile；没有全局笔记列表或 Zotero note 导出                                     |
 
 ## M2 的计划
 

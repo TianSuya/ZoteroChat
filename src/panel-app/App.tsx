@@ -18,7 +18,14 @@ import {
   type AsideMarker,
 } from "../ui/thread/asideContext";
 import { AsideOverlay } from "../ui/thread/AsideOverlay";
-import type { BridgeSelection, PanelBridge } from "./bridge";
+import { NoteEditor } from "../ui/thread/NoteEditor";
+import {
+  NoteActionsProvider,
+  type NoteActions,
+  type NoteEditorRequest,
+} from "../ui/thread/noteContext";
+import type { BridgeNote, BridgeSelection, PanelBridge } from "./bridge";
+import { report } from "../utils/report";
 
 export function App({ bridge }: { bridge: PanelBridge }) {
   const [theme, setTheme] = useState(bridge.theme);
@@ -103,12 +110,96 @@ function ChatSession({
     bridge.getUiLanguage(),
   );
   const [asides, setAsides] = useState<AsideRecord[]>([]);
+  const [notes, setNotes] = useState<BridgeNote[]>([]);
+  const [noteEditor, setNoteEditor] = useState<NoteEditorRequest | null>(null);
   const [activeAsideId, setActiveAsideId] = useState<string | null>(null);
   const activeAsideIdRef = useRef<string | null>(null);
   activeAsideIdRef.current = activeAsideId;
   const mainRootRef = useRef<HTMLDivElement>(null);
 
   const activeAside = asides.find((a) => a.id === activeAsideId) ?? null;
+
+  useEffect(() => {
+    setNotes(view.notes);
+  }, [view.notes]);
+
+  const notesFor = useCallback(
+    (messageId: string) => notes.filter((note) => note.messageId === messageId),
+    [notes],
+  );
+  const openNewNote = useCallback(
+    (messageId: string, quote: string, rect?: NoteEditorRequest["rect"]) => {
+      setNoteEditor({ messageId, quote, rect });
+    },
+    [],
+  );
+  const openExistingNote = useCallback(
+    (note: BridgeNote, rect?: NoteEditorRequest["rect"]) => {
+      setNoteEditor({
+        messageId: note.messageId,
+        quote: note.quote,
+        note,
+        rect,
+      });
+    },
+    [],
+  );
+  const noteActions = useMemo<NoteActions>(
+    () => ({
+      notesFor,
+      openNew: openNewNote,
+      openExisting: openExistingNote,
+    }),
+    [notesFor, openExistingNote, openNewNote],
+  );
+
+  const savingNoteRef = useRef(false);
+  const saveNote = useCallback(
+    async (text: string) => {
+      const editor = noteEditor;
+      if (!editor || savingNoteRef.current) return;
+      savingNoteRef.current = true;
+      try {
+        if (editor.note) {
+          const updated = await bridge.updateNote({
+            id: editor.note.id,
+            note: text,
+          });
+          if (updated) {
+            setNotes((prev) =>
+              prev.map((note) => (note.id === updated.id ? updated : note)),
+            );
+          }
+        } else {
+          const created = await bridge.saveNote({
+            id: generateId(),
+            messageId: editor.messageId,
+            quote: editor.quote,
+            note: text,
+          });
+          setNotes((prev) => [...prev, created]);
+        }
+        setNoteEditor(null);
+      } catch (err) {
+        report("note save failed", String(err));
+      } finally {
+        savingNoteRef.current = false;
+      }
+    },
+    [bridge, noteEditor],
+  );
+
+  const removeNote = useCallback(async () => {
+    const editor = noteEditor;
+    if (!editor?.note) return;
+    try {
+      await bridge.deleteNote(editor.note.id);
+      setNotes((prev) => prev.filter((note) => note.id !== editor.note!.id));
+      setNoteEditor(null);
+    } catch (err) {
+      report("note delete failed", String(err));
+    }
+  }, [bridge, noteEditor]);
 
   useEffect(() => bridge.onUiLanguageChange?.(setUiLanguage), [bridge]);
   useEffect(
@@ -165,12 +256,14 @@ function ChatSession({
         },
       ]);
       setActiveAsideId(id);
+      setNoteEditor(null);
     },
     [bridge],
   );
 
   const onOpenAside = useCallback((asideId: string) => {
     setActiveAsideId(asideId);
+    setNoteEditor(null);
   }, []);
 
   const onCloseAside = useCallback(() => {
@@ -217,23 +310,28 @@ function ChatSession({
         <div className="relative h-full min-h-0">
           <AsideActionsProvider value={asideActions}>
             <div ref={mainRootRef} className="h-full min-h-0">
-              <Thread
-                paperTitle={view.paper?.title || bridge.paperTitle}
-                onNewConversation={onNewConversation}
-                onOpenSettings={bridge.openPreferences}
-                selection={selection}
-                onClearSelection={() => {
-                  commitSelection(null);
-                  bridge.dismissSelection();
-                }}
-                usage={view.usage}
-                charCount={view.paper?.charCount}
-                prefixBreak={view.prefixBreak}
-                paperError={view.paperError}
-                paperLoading={view.paperLoading}
-              >
-                {children}
-              </Thread>
+              <NoteActionsProvider value={noteActions}>
+                <Thread
+                  paperTitle={view.paper?.title || bridge.paperTitle}
+                  onNewConversation={onNewConversation}
+                  onOpenSettings={bridge.openPreferences}
+                  selection={selection}
+                  onClearSelection={() => {
+                    commitSelection(null);
+                    bridge.dismissSelection();
+                  }}
+                  usage={view.usage}
+                  charCount={view.paper?.charCount}
+                  prefixBreak={view.prefixBreak}
+                  paperError={view.paperError}
+                  paperLoading={view.paperLoading}
+                  pendingPrompt={view.pendingPrompt}
+                  onAnswerPrompt={view.answerPrompt}
+                  onSkipPrompt={view.skipPrompt}
+                >
+                  {children}
+                </Thread>
+              </NoteActionsProvider>
             </div>
           </AsideActionsProvider>
           {activeAside ? (
@@ -248,6 +346,22 @@ function ChatSession({
               paperError={view.paperError}
               paperLoading={view.paperLoading}
               onClose={onCloseAside}
+            />
+          ) : null}
+          {noteEditor ? (
+            <NoteEditor
+              request={noteEditor}
+              onClose={() => setNoteEditor(null)}
+              onSave={(text) => {
+                void saveNote(text);
+              }}
+              onDelete={
+                noteEditor.note
+                  ? () => {
+                      void removeNote();
+                    }
+                  : undefined
+              }
             />
           ) : null}
         </div>

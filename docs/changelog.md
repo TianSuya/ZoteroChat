@@ -1,8 +1,14 @@
 # 更新记录
 
-## 未发布
+## 0.2.0 — 2026-10-20
 
-（无。下一版从这里记起。）
+- **DeepSeek Search / Fetch**：主对话可自主搜索网页、抓取页面。设置页新增搜索 key（留空复用主 key）、搜索 Base URL、联网开关和“测试搜索”。见 [adr/0010](adr/0010-tools-and-notes.md)。
+- **论文确认入库**：模型找到 PDF 直链后可请求加入 Zotero；每次写入前弹确认卡。校验 URL、PDF 魔数、大小，按 DOI 去重，沿用当前 library/collection。
+- **Ask User**：模型可在关键选择上向用户提问，composer 上方显示问题卡，回答作为 tool 结果继续生成。支持快捷选项、跳过和停止。
+- **选段笔记**：选中主对话文字可写笔记；原文用暖色高亮标注，点击高亮可查看/编辑/删除。笔记写入 `zc_notes`，**不进入 prompt**，不改变前缀缓存。
+- **SQLite schema v2**：`zc_messages` 增加 `visible`、tool calls、tool trace 列；新增 `zc_notes`；旧库原地迁移。
+- 修复暗色主题：`html[data-zc-theme="dark"]` 现在能覆盖 `.zc-root` 和 Radix portal 的 raised token；同时移除残留的 shadow DOM 注释/选择器。
+- 会话 hydration 改为共享 in-flight Promise，避免面板挂载与首轮发送并发创建两条活跃会话；新对话会丢弃在途旧回合。
 
 ## 0.1.12 — 2026-09-23
 

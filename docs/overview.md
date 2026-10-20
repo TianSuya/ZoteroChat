@@ -47,6 +47,10 @@ Zotero 右侧边栏的论文阅读助手：以**当前打开的 PDF 附件**为�
 - 「针对选段提问」是盖在主对话上的 overlay，不改 `[0][1][2]`；副对话快照分叉时的主历史，
   引用片段只在首轮后缀。见 [adr/0009](adr/0009-aside-overlay.md)。
 - PDF 划词弹窗可显示译文（默认 Google）。翻译不进入对话、不改冻结前缀。
+- 工具调用（Search/Fetch/入库/Ask User）只追加 assistant(tool_calls) 与 tool 消息，
+  不插入冻结前缀；中间消息不渲染成气泡。论文入库必须经用户确认，见
+  [adr/0010](adr/0010-tools-and-notes.md)。
+- 选段笔记写入 `zc_notes`，**不进入 prompt**，因此写笔记不改变前缀或缓存。
 - OpenAI 的 `prompt_cache_key` 尚未发送；DeepSeek 当前只靠前缀字节匹配。
 
 ### 三条不变量

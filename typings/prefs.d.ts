@@ -24,6 +24,10 @@ declare namespace _ZoteroTypes {
       "translatePopupHeight": number;
       "showCostBar": boolean;
       "debugDumpPayload": boolean;
+      "searchEnabled": boolean;
+      "searchApiKey": string;
+      "searchBaseUrl": string;
+      "allowPaperDownloads": boolean;
       "devSeedPDF": string;
       "devApiKeyFile": string;
       "devShowRadixProbe": boolean;

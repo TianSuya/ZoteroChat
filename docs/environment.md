@@ -368,3 +368,34 @@ Radix 的 Tooltip、Popover 默认 portal 到 iframe 的 `document.body`，在 `
 解法：在 `html` / `html[data-zc-theme="dark"]` 上也定义同一套 token；浮层加
 `.zc-portal.zc-float`，hover 只调不透明底的亮度，不要换成半透明 fill。划词条
 `.zc-ask-aside-chip` 同一原则。
+
+---
+
+## 十五、工具调用与论文下载
+
+### 15.1 `tool_calls` 参数是分片流
+
+Chat Completions 的 `delta.tool_calls` 第一片带 `id` / `function.name`，后续只带
+`function.arguments` 片段。**不能对每个片段单独 `JSON.parse`**，否则参数稍长就报
+“Unexpected end of JSON input”。`src/llm/client/toolCallDelta.ts` 按 `index`
+拼装，`finish()` 才产出完整调用。
+
+### 15.2 Search / Fetch 是独立端点
+
+`POST {searchBaseUrl}/v1/tools/search`、`/v1/tools/fetch`，Bearer 认证。
+`searchBaseUrl` 填 base（默认 `https://api.deepseek.com`），不是完整 endpoint。
+402（余额不足）、429（QPS）和 5xx 可以等待后重试；其它 4xx 不要自动重试。
+Search/Fetch 按成功请求计费，空结果不计费。
+
+### 15.3 论文下载的边界
+
+`add_paper_to_zotero` 只接受 http(s)、无凭据、非 localhost/私网地址；下载到
+`Zotero.getTempDirectory()` 后检查 80 MB 上限和 `%PDF-` 魔数，再
+`Zotero.Attachments.importFromFile`。失败时删除临时文件并回滚父条目。
+arXiv `abs` 和 OpenReview `forum` 会转成 PDF 直链；需要登录的出版商页面可能失败。
+
+### 15.4 Ask User 的等待状态不持久化
+
+面板里的 `ask_user` 是一个 pending Promise。关闭面板、切 PDF 或重载插件会把
+等待中的提问 abort；已经完成的 tool 消息仍在 sqlite 里。首版没有“恢复未回答问题”
+的机制。

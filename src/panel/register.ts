@@ -9,9 +9,12 @@ import {
 import {
   beginAside,
   beginConversation,
+  deleteNote,
   resetConversation,
+  saveNote,
   streamAsideTurn,
   streamTurn,
+  updateNote,
 } from "../llm/session";
 import { openPreferences } from "../prefs/register";
 import {
@@ -180,6 +183,9 @@ export function registerPanelSection() {
         beginAside: (req) => beginAside(itemID, req),
         streamAsideTurn: (req, handlers) =>
           streamAsideTurn(itemID, req.asideId, req, handlers),
+        saveNote: (req) => saveNote(itemID, req),
+        updateNote: (req) => updateNote(itemID, req),
+        deleteNote: (id) => deleteNote(itemID, id),
       });
 
       frames.set(el, { frame, itemID });

@@ -20,6 +20,7 @@ class Addon {
         message: string;
         model?: string;
       }>;
+      testSearch: () => Promise<{ ok: boolean; message: string }>;
       clearSecretCache: () => void;
       applyToPanels: () => void;
       openPreferences: () => void;

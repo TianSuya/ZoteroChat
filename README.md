@@ -20,8 +20,11 @@
 ## Features
 
 - **Discuss the current paper.** Start with a summary, methods, limitations, or key terms, then ask follow-up questions.
+- **Search beyond the paper.** The assistant can use DeepSeek Search and Fetch to check related work or publication status, then cite the pages it read. Add a search key separately or reuse the main key.
+- **Save a paper to Zotero.** When you ask it to find and download a paper, the assistant proposes the item first; nothing is written until you confirm. PDFs are validated and de-duplicated by DOI.
 - **Ask about a passage.** Highlight text to attach it to your next question, or choose **Explain selection** in the reader popup. The same popup can show a translation of the selection.
-- **Follow up on an answer without scrolling away.** **Ask about selection** opens a short overlay on the main thread, then returns you to the same place.
+- **Write notes on a passage.** Select text in the conversation and add a private note. Notes are marked inline and stored with the conversation; they are never sent to the model.
+- **Follow up on an answer without scrolling away.** **Ask about selection** opens a short overlay on the main thread, then returns you to the same place. The assistant can also ask you a clarifying question before continuing.
 - **Read formatted answers.** Responses stream into the sidebar with Markdown and LaTeX equations.
 - **Choose your reading preferences.** Set the reply language and text size, and use `/` for quick prompts.
 - **Inspect token usage.** See input/output tokens and cache hits when the provider returns them.
@@ -72,12 +75,16 @@ You need Zotero, a PDF with extractable text, and access to a model endpoint. Ho
 
 The current defaults are:
 
-| Setting        | Default                          |
-| -------------- | -------------------------------- |
-| Base URL       | `https://api.deepseek.com`       |
-| Model          | `deepseek-flash`                 |
-| API key        | Empty; supply your own           |
-| Reply language | Simplified Chinese; configurable |
+| Setting         | Default                          |
+| --------------- | -------------------------------- |
+| Base URL        | `https://api.deepseek.com`       |
+| Model           | `deepseek-flash`                 |
+| API key         | Empty; supply your own           |
+| Search API key  | Empty; falls back to the API key |
+| Search Base URL | `https://api.deepseek.com`       |
+| Web search      | On                               |
+| Add papers      | On; confirms every write         |
+| Reply language  | Simplified Chinese; configurable |
 
 The client appends `/chat/completions` to the Base URL. Include any API version prefix required by your endpoint; do not enter the complete completion URL. A successful connection test does not validate streaming, cache reporting, or every model option.
 
@@ -97,20 +104,24 @@ Install the `.xpi` generated under `.scaffold/build/`. Building does not require
 1. Ask a question or select a quick prompt in the sidebar.
 2. To focus on a passage, highlight it in the PDF. The selection appears above the input and is included when you send. Remove the selection chip to omit it from the next request's new message; selections already sent remain in conversation history.
 3. Press **Enter** to send or **Shift+Enter** for a new line. Use the stop button to interrupt a response.
-4. Use **New conversation** to reset the current session. Copy answers you want to keep; automatic saving and Zotero note export are not available yet.
+4. Use **New conversation** to reset the current session. History is saved automatically per PDF; exporting answers to Zotero notes is not available yet.
 
 ## Compatibility and limitations
 
-| Area                 | Current status                                                                                                                                                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Zotero               | Development validation is documented on Zotero 9.0.6 / Gecko 140. Zotero 7–9 are compatibility targets; Zotero 7 and 8 have not completed a test matrix.                                                                                   |
-| Operating systems    | Cross-platform verification is incomplete. Report the OS and Zotero version with compatibility issues.                                                                                                                                     |
-| Model endpoints      | DeepSeek is the documented development endpoint. Other OpenAI-compatible Chat Completions services and local servers require validation. The client currently sends `thinking` and streaming usage options without capability negotiation. |
-| Local servers        | The settings loader currently requires a nonempty API key, even if the server itself does not require authentication.                                                                                                                      |
-| Conversation history | Stored per PDF in the Zotero profile. No editing of committed messages or conversation branches. **New conversation** archives the old thread.                                                                                             |
-| Long documents       | The paper and conversation must fit the model's context window. Automatic compression and context-limit handling are not implemented.                                                                                                      |
-| PDF content          | Uses extracted text, not page images. No built-in OCR or visual understanding of figures. Text extraction can omit layout or mathematical detail.                                                                                          |
-| References           | Full-text extraction does not preserve page mapping. Check claims and references against the paper.                                                                                                                                        |
+| Area                 | Current status                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zotero               | Development validation is documented on Zotero 9.0.6 / Gecko 140. Zotero 7–9 are compatibility targets; Zotero 7 and 8 have not completed a test matrix.                                                                                                      |
+| Operating systems    | Cross-platform verification is incomplete. Report the OS and Zotero version with compatibility issues.                                                                                                                                                        |
+| Model endpoints      | DeepSeek is the documented development endpoint. Other OpenAI-compatible Chat Completions services and local servers require validation. The client currently sends `thinking`, tool definitions, and streaming usage options without capability negotiation. |
+| Search and tools     | DeepSeek Search/Fetch are billed per successful request, not per token. Search/Fetch and the paper download path were verified with unit tests, not a live account.                                                                                           |
+| Paper downloads      | Direct PDF links, arXiv abstract pages, and OpenReview forum pages are supported. Publisher pages that require login or extra navigation may fail.                                                                                                            |
+| Notes                | Notes stay in the current Zotero profile's `zoterochat.sqlite`; they are not exported to Zotero notes or synced across devices.                                                                                                                               |
+| Asking the user      | A pending question is not restored if the panel reloads or you switch PDFs; answered turns remain in history.                                                                                                                                                 |
+| Local servers        | The settings loader currently requires a nonempty API key, even if the server itself does not require authentication.                                                                                                                                         |
+| Conversation history | Stored per PDF in the Zotero profile. No editing of committed messages or conversation branches. **New conversation** archives the old thread.                                                                                                                |
+| Long documents       | The paper and conversation must fit the model's context window. Automatic compression and context-limit handling are not implemented.                                                                                                                         |
+| PDF content          | Uses extracted text, not page images. No built-in OCR or visual understanding of figures. Text extraction can omit layout or mathematical detail.                                                                                                             |
+| References           | Full-text extraction does not preserve page mapping. Check claims and references against the paper.                                                                                                                                                           |
 
 ## Data and privacy
 
@@ -122,7 +133,7 @@ Before sharing diagnostic logs, remove credentials, private document text, and i
 
 ## Context caching
 
-ZoteroChat keeps the system prompt and extracted paper block stable, then appends completed turns. Reply-language instructions and the current selection are added to the new turn. This structure is intended to make repeated context eligible for a provider's prompt cache.
+ZoteroChat keeps the system prompt and extracted paper block stable, then appends completed turns. Reply-language instructions and the current selection are added to the new turn. Tool calls and their results are also appended, never inserted into the frozen prefix; notes are kept out of the prompt entirely. This structure is intended to make repeated context eligible for a provider's prompt cache.
 
 Two separate signals are available: `PrefixLedger` detects changes to the local message prefix, while provider usage fields report actual cache hits. A stable local prefix does not guarantee a cache hit or a particular cost reduction. End-to-end cache benchmarks are still pending, and the client does not yet send `prompt_cache_key`.
 

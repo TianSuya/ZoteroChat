@@ -1,6 +1,10 @@
 import { config } from "../../package.json";
 import { notifyPrefsApplied } from "../i18n/prefs";
-import { clearSecretCache, testConnection } from "../llm/session";
+import {
+  clearSecretCache,
+  testConnection,
+  testSearchConnection,
+} from "../llm/session";
 import { seedApiKeyFromDevFile } from "../llm/secrets";
 
 export async function registerPreferencePane() {
@@ -17,6 +21,7 @@ export async function registerPreferencePane() {
   addon.data.registry.prefsID = id;
   addon.data.api = {
     testConnection,
+    testSearch: testSearchConnection,
     clearSecretCache,
     applyToPanels: notifyPrefsApplied,
     openPreferences,

@@ -38,21 +38,17 @@ body {
 }
 
 /*
- * The panel renders inside a shadow root, so this stylesheet is fully isolated
- * from Zotero and vice versa. Two consequences shape what follows:
- *
- * 1. Preflight is safe to leave on — it cannot leak out.
- * 2. `:host-context()` is unavailable (Firefox never implemented it), and
- *    Tailwind's `dark:` variant needs its selector on an ancestor *inside* the
- *    shadow tree. So the theme flag lives on `.zc-root`, not on the host.
+ * The panel is a real HTML document inside an iframe. Preflight is safe to
+ * leave on because the document boundary is the isolation boundary.
+ * Tailwind's dark variant reads `html[data-zc-theme="dark"]`; App.tsx writes
+ * that flag to the panel documentElement.
  */
 
 /*
-   * Inherited properties still cross the shadow boundary, so reset the ones
-   * Zotero sets. Avoid `all: initial` — it would also drop the host's own
-   * layout participation in the item pane.
-   */
-:host {
+ * Reset the inherited properties Zotero sets on its own chrome. The panel's
+ * `html` is already a separate document, so this only affects our content.
+ */
+html {
   display: block;
   height: 100%;
   font-family:
@@ -70,16 +66,15 @@ body {
 }
 
 /*
-   * Design tokens.
-   *
-   * Each maps onto a Zotero CSS variable with a hardcoded fallback. Custom
-   * properties inherit through the shadow boundary, so referencing Zotero's
-   * variables from in here is all that "follow the host theme" requires —
-   * there is no bridging code anywhere.
-   *
-   * Zotero's variable names are not a documented API. The fallbacks are what
-   * keep the panel legible if one of them moves.
-   */
+ * Design tokens.
+ *
+ * Each maps onto a Zotero CSS variable with a hardcoded fallback. frame.ts
+ * copies the host values onto our documentElement; custom properties then
+ * inherit normally inside this document.
+ *
+ * Zotero's variable names are not a documented API. The fallbacks are what
+ * keep the panel legible if one of them moves.
+ */
 .zc-root {
   --zc-surface: var(--material-sidepane, #ffffff);
   --zc-surface-subtle: var(--material-mix-quarternary, #f7f7f5);
@@ -94,13 +89,15 @@ body {
   --zc-accent: var(--color-accent, #2383e2);
   --zc-accent-fg: #ffffff;
   --zc-danger: var(--color-red, #e03e3e);
+  --zc-note-highlight: rgba(245, 196, 66, 0.22);
+  --zc-note-highlight-hover: rgba(245, 196, 66, 0.36);
 
   color: var(--zc-fg);
   background-color: var(--zc-surface);
   -webkit-font-smoothing: antialiased;
 }
 
-.zc-root[data-zc-theme="dark"] {
+html[data-zc-theme="dark"] .zc-root {
   --zc-surface: var(--material-sidepane, #202020);
   --zc-surface-subtle: var(--material-mix-quarternary, #2a2a2a);
   --zc-surface-hover: var(--fill-quinary, #333333);
@@ -110,6 +107,8 @@ body {
   --zc-fg-muted: var(--fill-secondary, #9b9a97);
   --zc-fg-faint: var(--fill-tertiary, #6f6e69);
   --zc-accent-fg: #ffffff;
+  --zc-note-highlight: rgba(245, 196, 66, 0.2);
+  --zc-note-highlight-hover: rgba(245, 196, 66, 0.32);
 }
 
 /* Radix portals render here, outside `.zc-root`, so tokens need a second home. */
@@ -131,7 +130,7 @@ body {
   color: var(--zc-fg);
 }
 
-.zc-portal[data-zc-theme="dark"] {
+html[data-zc-theme="dark"] .zc-portal {
   --zc-surface: var(--material-sidepane, #202020);
   --zc-surface-subtle: var(--material-mix-quarternary, #2a2a2a);
   --zc-surface-hover: var(--fill-quinary, #333333);
@@ -190,7 +189,7 @@ body {
   background-color: var(--zc-surface-raised);
   filter: brightness(0.97);
 }
-.zc-root[data-zc-theme="dark"] .zc-ask-aside-chip:hover {
+html[data-zc-theme="dark"] .zc-ask-aside-chip:hover {
   filter: brightness(1.12);
 }
 
@@ -398,4 +397,48 @@ html[data-zc-theme="dark"] .zc-float-item:hover {
   display: block;
   margin: 0;
   overflow: visible;
+}
+
+/* Floating strip over a message selection. Opaque like every other float. */
+.zc-selection-menu {
+  max-width: calc(100vw - 16px);
+  flex-wrap: wrap;
+}
+.zc-selection-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--zc-fg-muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.zc-selection-action:hover {
+  background: var(--zc-surface-hover);
+  color: var(--zc-fg);
+}
+
+/* A note is a user annotation, not model output: warm inline highlight. */
+.zc-note-mark {
+  background-color: var(--zc-note-highlight, rgba(245, 196, 66, 0.22));
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 1px;
+  margin: 0 -1px;
+  cursor: pointer;
+}
+.zc-note-mark:hover {
+  background-color: var(--zc-note-highlight-hover, rgba(245, 196, 66, 0.36));
+}
+
+.zc-note-editor {
+  max-width: calc(100vw - 16px);
 }

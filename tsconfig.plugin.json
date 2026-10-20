@@ -25,6 +25,7 @@
     "src/context/**/*.ts",
     "src/i18n/**/*.ts",
     "src/llm/**/*.ts",
+    "src/tools/**/*.ts",
     "src/prefs/register.ts",
     "src/reader/**/*.ts",
     "src/translate/**/*.ts",

@@ -7,6 +7,7 @@
  * surface explicit anyway makes it obvious what the UI is allowed to touch.
  */
 import type { UiLanguage } from "../i18n/languages";
+import type { LoadedNote, ToolTrace } from "../llm/types";
 
 export type BridgePaperStatus = {
   itemID: number;
@@ -19,7 +20,11 @@ export type BridgeDisplayMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  /** Present when the reply involved tool calls. */
+  toolTrace?: ToolTrace[];
 };
+
+export type BridgeNote = LoadedNote;
 
 export type BridgeAside = {
   id: string;
@@ -32,6 +37,7 @@ export type BridgeAside = {
 export type BridgeSession = BridgePaperStatus & {
   messages: BridgeDisplayMessage[];
   asides: BridgeAside[];
+  notes: BridgeNote[];
 };
 
 export type BridgeUsage = {
@@ -50,6 +56,25 @@ export type BridgeStreamJob = {
   cancel: () => void;
   done: Promise<void>;
 };
+
+export type BridgeAskUserRequest = {
+  question: string;
+  options?: string[];
+};
+
+export type BridgePaperRequest = {
+  url: string;
+  title: string;
+  doi?: string;
+  authors?: string[];
+  year?: string;
+  abstract?: string;
+};
+
+/** What the panel is currently waiting for the user to answer. */
+export type BridgePendingPrompt =
+  | ({ kind: "question" } & BridgeAskUserRequest)
+  | ({ kind: "paper" } & BridgePaperRequest);
 
 export interface PanelBridge {
   /** Attachment item backing this conversation. */
@@ -86,7 +111,7 @@ export interface PanelBridge {
   onExplainRequest?: (
     listener: (selection: BridgeSelection) => void,
   ) => () => void;
-  /** Send one turn. The plugin owns the wire-format history. */
+  /** Send one turn. The plugin owns the wire-format history and tool loop. */
   streamTurn: (
     req: {
       question: string;
@@ -98,6 +123,11 @@ export interface PanelBridge {
       onDelta: (text: string) => void;
       onUsage?: (usage: BridgeUsage) => void;
       onPrefixBreak?: () => void;
+      onToolTrace?: (trace: ToolTrace[]) => void;
+      /** Model asks the user something; resolves with the answer. */
+      onAskUser?: (req: BridgeAskUserRequest) => Promise<string>;
+      /** Model wants to write a paper to the library; resolves true to proceed. */
+      onConfirmPaper?: (req: BridgePaperRequest) => Promise<boolean>;
     },
   ) => BridgeStreamJob;
   /** Snapshot main turns and start an aside that reuses the paper prefix. */
@@ -120,6 +150,15 @@ export interface PanelBridge {
       onPrefixBreak?: () => void;
     },
   ) => BridgeStreamJob;
+  /** Persist a note on a message selection. Notes never enter the prompt. */
+  saveNote: (req: {
+    id: string;
+    messageId: string;
+    quote: string;
+    note: string;
+  }) => Promise<BridgeNote>;
+  updateNote: (req: { id: string; note: string }) => Promise<BridgeNote | null>;
+  deleteNote: (id: string) => Promise<void>;
   /** Design tokens copied from the host window, plus the resolved theme. */
   theme: {
     mode: "light" | "dark";

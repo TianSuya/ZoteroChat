@@ -8,7 +8,9 @@
  * paper text in this file is huge.
  */
 
-const SCHEMA_VERSION = 1;
+import type { LoadedNote, ToolCall, ToolTrace } from "../llm/types";
+
+const SCHEMA_VERSION = 2;
 
 const DDL = [
   `CREATE TABLE IF NOT EXISTS zc_meta (
@@ -45,6 +47,11 @@ const DDL = [
      wire_content TEXT NOT NULL,
      display_content TEXT NOT NULL,
      display_id TEXT NOT NULL,
+     visible INTEGER NOT NULL DEFAULT 1,
+     tool_calls_json TEXT,
+     tool_call_id TEXT,
+     tool_name TEXT,
+     tool_trace_json TEXT,
      created_at INTEGER NOT NULL,
      UNIQUE (conversation_id, seq)
    )`,
@@ -68,6 +75,17 @@ const DDL = [
      created_at INTEGER NOT NULL,
      UNIQUE (aside_id, seq)
    )`,
+  `CREATE TABLE IF NOT EXISTS zc_notes (
+     id TEXT PRIMARY KEY,
+     conversation_id INTEGER NOT NULL,
+     message_id TEXT NOT NULL,
+     quote TEXT NOT NULL,
+     note TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     updated_at INTEGER NOT NULL
+   )`,
+  `CREATE INDEX IF NOT EXISTS zc_notes_conversation
+     ON zc_notes (conversation_id, created_at)`,
 ];
 
 export type StoredDoc = {
@@ -83,11 +101,19 @@ export type StoredDoc = {
 
 export type StoredTurn = {
   seq: number;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "tool";
   wireContent: string;
   displayContent: string;
   displayId: string;
+  /** Hidden intermediate tool-call/tool-result rows are not chat bubbles. */
+  visible: boolean;
+  toolCalls?: ToolCall[];
+  toolCallId?: string;
+  toolName?: string;
+  toolTrace?: ToolTrace[];
 };
+
+export type StoredNote = LoadedNote;
 
 export type StoredAsideRow = {
   id: string;
@@ -107,6 +133,23 @@ function sqlitePath(): string {
   return `${dir}${sep}zoterochat.sqlite`;
 }
 
+async function ensureColumn(
+  db: _ZoteroTypes.DB,
+  table: string,
+  column: string,
+  definition: string,
+): Promise<void> {
+  const rows = (await db.queryAsync(`PRAGMA table_info(${table})`)) ?? [];
+  const exists = rows.some(
+    (row) => String((row as Record<string, unknown>).name ?? "") === column,
+  );
+  if (!exists) {
+    await db.queryAsync(
+      `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`,
+    );
+  }
+}
+
 async function open(): Promise<_ZoteroTypes.DB | null> {
   try {
     const db = new Zotero.DBConnection(sqlitePath());
@@ -114,15 +157,25 @@ async function open(): Promise<_ZoteroTypes.DB | null> {
     for (const stmt of DDL) {
       await db.queryAsync(stmt);
     }
-    const ver = await db.valueQueryAsync<string>(
-      "SELECT value FROM zc_meta WHERE key = 'schema'",
+
+    // v1 → v2: existing libraries keep their messages; intermediate tool rows
+    // are hidden by default and old rows are visible chat bubbles.
+    await ensureColumn(
+      db,
+      "zc_messages",
+      "visible",
+      "INTEGER NOT NULL DEFAULT 1",
     );
-    if (ver === false) {
-      await db.queryAsync(
-        "INSERT INTO zc_meta (key, value) VALUES ('schema', ?)",
-        [String(SCHEMA_VERSION)],
-      );
-    }
+    await ensureColumn(db, "zc_messages", "tool_calls_json", "TEXT");
+    await ensureColumn(db, "zc_messages", "tool_call_id", "TEXT");
+    await ensureColumn(db, "zc_messages", "tool_name", "TEXT");
+    await ensureColumn(db, "zc_messages", "tool_trace_json", "TEXT");
+
+    await db.queryAsync(
+      `INSERT INTO zc_meta (key, value) VALUES ('schema', ?)
+       ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      [String(SCHEMA_VERSION)],
+    );
     ztoolkit.log("sqlite ready", db.path);
     return db;
   } catch (err) {
@@ -257,12 +310,22 @@ export async function archiveConversation(id: number): Promise<void> {
   ]);
 }
 
+function parseJson<T>(value: unknown): T | undefined {
+  if (typeof value !== "string" || !value) return undefined;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function loadTurns(conversationId: number): Promise<StoredTurn[]> {
   const db = await getDB();
   if (!db) return [];
   const rows =
     (await db.queryAsync(
-      `SELECT seq, role, wire_content, display_content, display_id
+      `SELECT seq, role, wire_content, display_content, display_id, visible,
+              tool_calls_json, tool_call_id, tool_name, tool_trace_json
          FROM zc_messages
         WHERE conversation_id = ?
         ORDER BY seq ASC`,
@@ -270,10 +333,20 @@ export async function loadTurns(conversationId: number): Promise<StoredTurn[]> {
     )) ?? [];
   return rows.map((row) => ({
     seq: Number(row.seq),
-    role: row.role === "assistant" ? "assistant" : "user",
+    role:
+      row.role === "assistant"
+        ? "assistant"
+        : row.role === "tool"
+          ? "tool"
+          : "user",
     wireContent: String(row.wire_content),
     displayContent: String(row.display_content),
     displayId: String(row.display_id),
+    visible: Number(row.visible) === 1,
+    toolCalls: parseJson<ToolCall[]>(row.tool_calls_json),
+    toolCallId: row.tool_call_id == null ? undefined : String(row.tool_call_id),
+    toolName: row.tool_name == null ? undefined : String(row.tool_name),
+    toolTrace: parseJson<ToolTrace[]>(row.tool_trace_json),
   }));
 }
 
@@ -290,8 +363,9 @@ export async function appendTurn(
   const seq = (typeof last === "number" ? last : -1) + 1;
   await db.queryAsync(
     `INSERT INTO zc_messages
-       (conversation_id, seq, role, wire_content, display_content, display_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (conversation_id, seq, role, wire_content, display_content, display_id,
+        visible, tool_calls_json, tool_call_id, tool_name, tool_trace_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       conversationId,
       seq,
@@ -299,6 +373,11 @@ export async function appendTurn(
       turn.wireContent,
       turn.displayContent,
       turn.displayId,
+      turn.visible === false ? 0 : 1,
+      turn.toolCalls?.length ? JSON.stringify(turn.toolCalls) : null,
+      turn.toolCallId ?? null,
+      turn.toolName ?? null,
+      turn.toolTrace?.length ? JSON.stringify(turn.toolTrace) : null,
       Date.now(),
     ],
   );
@@ -366,6 +445,7 @@ export async function loadAsides(
         wireContent: String(row.wire_content),
         displayContent: String(row.display_content),
         displayId: String(row.display_id),
+        visible: true,
       })),
     });
   }
@@ -397,4 +477,98 @@ export async function appendAsideTurn(
       Date.now(),
     ],
   );
+}
+
+export async function loadNotes(conversationId: number): Promise<StoredNote[]> {
+  const db = await getDB();
+  if (!db) return [];
+  const rows =
+    (await db.queryAsync(
+      `SELECT id, message_id, quote, note, created_at, updated_at
+         FROM zc_notes
+        WHERE conversation_id = ?
+        ORDER BY created_at ASC`,
+      [conversationId],
+    )) ?? [];
+  return rows.map((row) => ({
+    id: String(row.id),
+    messageId: String(row.message_id),
+    quote: String(row.quote),
+    note: String(row.note),
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+  }));
+}
+
+export async function insertNote(
+  conversationId: number,
+  note: { id: string; messageId: string; quote: string; note: string },
+): Promise<StoredNote> {
+  const now = Date.now();
+  const row: StoredNote = {
+    id: note.id,
+    messageId: note.messageId,
+    quote: note.quote,
+    note: note.note,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const db = await getDB();
+  if (!db) return row;
+  await db.queryAsync(
+    `INSERT INTO zc_notes
+       (id, conversation_id, message_id, quote, note, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      row.id,
+      conversationId,
+      row.messageId,
+      row.quote,
+      row.note,
+      row.createdAt,
+      row.updatedAt,
+    ],
+  );
+  return row;
+}
+
+export async function updateNote(
+  id: string,
+  note: string,
+): Promise<StoredNote | null> {
+  const db = await getDB();
+  if (!db) return null;
+  await db.queryAsync(
+    "UPDATE zc_notes SET note = ?, updated_at = ? WHERE id = ?",
+    [note, Date.now(), id],
+  );
+  const row = (await db.rowQueryAsync(
+    `SELECT id, message_id, quote, note, created_at, updated_at
+       FROM zc_notes WHERE id = ?`,
+    [id],
+  )) as
+    | {
+        id: string;
+        message_id: string;
+        quote: string;
+        note: string;
+        created_at: number;
+        updated_at: number;
+      }
+    | false;
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    messageId: String(row.message_id),
+    quote: String(row.quote),
+    note: String(row.note),
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+  };
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  await db.queryAsync("DELETE FROM zc_notes WHERE id = ?", [id]);
 }
