@@ -1,6 +1,6 @@
 # Screenshots
 
-Both READMEs display all three original annotated screenshots in an expanded interface-preview section after the feature list. Each image links to its full-size version. The current captures show the Chinese interface.
+The current READMEs use the `readme/` set captured from the disposable `ZoteroChatDev` profile. The older annotated images below are kept for reference. The current captures show the Chinese interface.
 
 | File                 | Purpose                                                                          |
 | -------------------- | -------------------------------------------------------------------------------- |
@@ -9,6 +9,19 @@ Both READMEs display all three original annotated screenshots in an expanded int
 | `03-real-chat.png`   | Third README screenshot: answer typography and rendered equations.               |
 | `reader-chat.png`    | Supplemental crop of `03-real-chat.png`; not currently embedded in the READMEs.  |
 | `selection.png`      | Supplemental crop of `02-selection.png`; not currently embedded in the READMEs.  |
+
+## Current README set
+
+| File                           | Purpose                                                 |
+| ------------------------------ | ------------------------------------------------------- |
+| `readme/01-hero.png`           | Full reader window with the conversation sidebar.       |
+| `readme/02-search.png`         | Search/Fetch tool trace, cited sources, and the answer. |
+| `readme/03-note-highlight.png` | Inline note highlight on a quoted sentence.             |
+| `readme/04-note-editor.png`    | Note editor opened from the highlight.                  |
+| `readme/05-aside.png`          | Ask-about-selection overlay with its own conversation.  |
+| `readme/06-settings.png`       | Connection and reading preferences in Zotero settings.  |
+
+The `readme/` set was captured from a disposable dev profile using the public `Attention Is All You Need` fixture. The conversation and tool trace come from a real dev run; the display title and note text were prepared in the disposable dev database for readability. No private library items, credentials, or desktop content are included.
 
 ## Updating screenshots
 

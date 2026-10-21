@@ -1,184 +1,154 @@
 <p align="center">
-  <img src="assets/logo-h.png" alt="ZoteroChat" width="420">
+  <img src="assets/logo-h.png" alt="ZoteroChat" width="440">
 </p>
 
-<p align="center"><strong>在 Zotero 里，边读论文，边提问。</strong></p>
+<p align="center"><strong>在 Zotero 里，和论文真正聊起来。</strong></p>
+<p align="center">读论文 · 查资料 · 记笔记 · 收进文库</p>
 
 <p align="center">
-  <a href="README.md">English</a> · 简体中文<br>
-  <a href="#安装">安装</a> ·
-  <a href="#界面预览">界面预览</a> ·
-  <a href="#兼容性与限制">兼容性</a> ·
-  <a href="docs/README.md">文档</a> ·
+  <a href="https://github.com/TianSuya/ZoteroChat/releases/latest">下载最新版</a> ·
+  <a href="README.md">English</a> ·
+  <a href="docs/">设计文档</a> ·
   <a href="docs/changelog.md">更新记录</a>
 </p>
 
-**ZoteroChat** 是 Zotero 侧边栏里的 PDF 阅读助手。围绕当前论文提问、讨论高亮段落，或结合公式理解方法。提取后的论文文本保留在对话上下文中，并通过稳定的请求前缀支持服务商的上下文缓存。
+---
 
-> 对话保存在当前 Zotero profile 的 `zoterochat.sqlite` 中，重新打开同一 PDF 会恢复记录。点「新对话」会归档当前线程并另起一条空会话。
+ZoteroChat 不是一个独立聊天窗口，而是 Zotero 阅读器右侧栏里的论文搭子。它把当前 PDF 的全文留在上下文里，所以你不用每次重复“这篇论文讲了什么”；读到不懂的句子，可以立刻追问、查外部资料，甚至把相关论文找回来。
 
-## 功能
-
-- **围绕当前论文讨论。** 从概括全文、讲解方法、局限或关键术语开始，继续追问。
-- **在论文之外查证。** 主对话和「针对选段提问」副对话都可以调用 DeepSeek Search / Fetch 查相关工作、发表状态，并引用读过的页面。搜索 Key 可单独填写，也可复用主 Key。
-- **把论文加入 Zotero。** 当你要求查找并下载某篇论文时，助手会先给出条目信息；确认后才写库。PDF 会校验并按 DOI 去重。
-- **针对段落提问。** 划词后将选区附到下一轮，或在阅读器弹窗点击「解释选区」。同一弹窗可显示选段译文。
-- **给选段写笔记。** 选中对话里的文字即可写私人笔记；原文用暖色高亮标注，点击高亮即可查看/编辑；笔记随对话保存，但**不会发给模型**。
-- **对着回答追问而不翻掉原文。** 「针对选段提问」在主对话上打开一层短问，结束后回到原来的位置。助手也可以在继续前向你提一个澄清问题。
-- **阅读排版完整的回答。** 流式显示 Markdown 和 LaTeX 公式。
-- **调整阅读偏好。** 设置回答语言和字号，通过 `/` 使用快捷提问。
-- **查看用量。** 在服务商返回相关字段时，显示输入、输出 token 和缓存命中情况。
-
-## 界面预览
-
-紧凑的侧栏、克制的控件和清晰的正文排版，让论文与讨论保持在同一视野中。以下截图使用中文界面，点击图片可查看原尺寸。
-
-### 在论文旁展开对话
-
-无需离开阅读器，即可打开侧栏。从快捷提问开始，逐步理解当前论文。
+所有对话按 PDF 保存。关掉 Zotero，明天再打开同一篇论文，对话、工具记录和笔记都还在原处。
 
 <p align="center">
-  <a href="docs/screenshots/01-reader-chat.png">
-    <img src="docs/screenshots/01-reader-chat.png" alt="ZoteroChat 阅读器侧栏，以及欢迎界面与快捷提问的放大细节" width="880">
-  </a>
+  <img src="docs/screenshots/readme/01-hero.png" alt="ZoteroChat 在 Zotero 阅读器右侧栏中围绕 Attention Is All You Need 对话" width="100%">
 </p>
 
-### 从划词自然进入提问
+## 为什么是 ZoteroChat
 
-阅读器弹窗提供「解释选区」，输入框上方的选区芯片显示下一轮将附带的段落，也可以随时移除。
+- **论文是主角。** 打开 PDF 就带着全文和元数据开始对话，追问不会变成“无上下文的聊天”。Markdown、表格和 LaTeX 公式直接渲染。
+- **不打断阅读。** 解释选段、副对话、写笔记都在右侧栏完成，不需要在 PDF 和网页之间来回切换。
+- **能查证，不只靠记忆。** 需要外部信息时，助手可以调用 DeepSeek Search / Fetch，回答里附来源链接，工具记录会留在消息下方。
+- **你的库，你掌控。** 下载论文前一定先确认，不会偷偷往 Zotero 里塞条目；对话和笔记保存在本地 profile 的 sqlite 里。
+
+## 读到不懂的地方，直接查
+
+选中一段文字后，可以直接问“这段在说什么”；需要相关工作、最新进展或原文出处时，助手会搜索网页、读取页面，再把结论和来源一起给你。
+
+- 主对话和「针对选段提问」的副对话都可以调用检索工具。
+- 回答里的来源是可点击的 Markdown 链接。
+- 每次搜索、抓取都会显示成一条紧凑的工具记录；失败也会给出原因，不会静默消失。
 
 <p align="center">
-  <a href="docs/screenshots/02-selection.png">
-    <img src="docs/screenshots/02-selection.png" alt="PDF 高亮段落，以及解释选区弹窗和输入框选区芯片的放大细节" width="880">
-  </a>
+  <img src="docs/screenshots/readme/02-search.png" alt="ZoteroChat 搜索结果、引用链接和工具 trace" width="430">
 </p>
 
-### 清晰呈现回答与公式
+<p align="center"><sub>搜索、抓取和引用都留在这条回答下面；长对话不会把论文挤出上下文。</sub></p>
 
-通过标题、段落和公式排版组织详细解释，方便对照原文逐步阅读。
+## 一句话的副对话，不打断正文
+
+助手回答里有一句没看懂？选中它，点「针对选段提问」，就会在主对话上盖一层短问。问完点「← 正文」或按 Esc，回到离开时的位置。
+
+副对话复用同一篇论文的前缀，所以不用重新读一遍全文；它也不会把主时间线拉长。每条副对话在原文下留一个标记，随时可以再打开。
 
 <p align="center">
-  <a href="docs/screenshots/03-real-chat.png">
-    <img src="docs/screenshots/03-real-chat.png" alt="围绕论文关键公式的回答，右侧放大展示正文层次与数学公式排版" width="880">
-  </a>
+  <img src="docs/screenshots/readme/05-aside.png" alt="ZoteroChat 针对选段提问的副对话 overlay" width="430">
 </p>
+
+<p align="center"><sub>副对话只盖住侧栏，不改变主对话的滚动位置和消息顺序。</sub></p>
+
+## 笔记写在原句上
+
+读到有想法的地方，选中对话里的文字，点「记笔记」。这句话会原地变成暖色高亮，和副对话的蓝色下划线区分开；点击高亮即可编辑或删除。
+
+- 笔记按消息和原句保存，重新打开 PDF 仍在。
+- 笔记是给你自己看的，**不会发给模型**，也不会改变对话前缀。
+- 不需要另开一个笔记应用，读到哪、记到哪。
+
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/screenshots/readme/03-note-highlight.png" width="400" alt="ZoteroChat 在原句上显示笔记高亮"><br>
+      <sub>选中的原句用暖色高亮标记</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/screenshots/readme/04-note-editor.png" width="400" alt="ZoteroChat 笔记编辑器"><br>
+      <sub>点击高亮即可编辑或删除笔记</sub>
+    </td>
+  </tr>
+</table>
+
+## 该问你的时候，先问你
+
+不是所有问题都能从论文里推断。需要你做选择时，助手会在输入框上方弹出一张问题卡，支持快捷选项、自由文本或跳过；你的回答会作为工具结果继续喂回模型，而不是让它猜。
+
+## 确认之后，再写进 Zotero
+
+当你明确说“把这篇论文加到 Zotero”时，助手会先给出确认卡：标题、来源、DOI、年份、作者。确认后才下载 PDF、校验文件、按 DOI 去重，并在当前论文所属的 library / collection 创建条目。
+
+- 每次写入前都确认，不会在后台偷偷改库。
+- 只接受公开的 http(s) 地址；下载后会检查 PDF 魔数和大小。
+- 直链 PDF、arXiv 和 OpenReview 会自动处理；需要登录或 CAPTCHA 的出版商页面可能失败，但会在工具记录里说明原因。
+
+## 关掉再打开，对话还在
+
+对话按 PDF 保存在当前 Zotero profile 的 `zoterochat.sqlite` 中，消息只追加、不改写。重新打开论文会恢复：
+
+- 主对话和副对话
+- 搜索 / 抓取 / 入库的工具记录
+- 你写过的笔记
+
+「新对话」会把当前线程归档并另起一条空会话，不会删除旧记录。
 
 ## 安装
 
-你需要 Zotero、一篇可提取文本的 PDF，以及可用的模型端点。托管 API 需要自备密钥，请求可能产生费用。
+1. 从 [Releases](https://github.com/TianSuya/ZoteroChat/releases/latest) 下载最新的 `zotero-chat.xpi`。
+2. 在 Zotero 打开 **工具 → 插件 → 齿轮 → 从文件安装插件…**，选择 XPI。
+3. 重启 Zotero，打开 **Zotero → 设置 → ZoteroChat**（Windows/Linux 为 **编辑 → 设置**）。
+4. 填入 Base URL、API key 和模型；需要使用联网搜索时，再填搜索 key（可留空复用主 key）。
+5. 在阅读器打开 PDF，点击右侧栏的对话图标。
 
-1. 项目发布安装包后，可从 [Releases 页面](https://github.com/TianSuya/ZoteroChat/releases)下载 `.xpi`。若页面不可用或没有安装包，请[从源码构建](#从源码构建)。
-2. 在 Zotero 中打开「工具 → 插件 → 齿轮 → 从文件安装插件…」，选择 `.xpi`。
-3. 重启 Zotero，打开 macOS 的「Zotero → 设置 → ZoteroChat」，或 Windows/Linux 的「编辑 → 设置 → ZoteroChat」。侧栏齿轮也可以打开设置。
-4. 填写 Base URL、API key 和模型，点击「测试连接」检查配置。
-5. 用 Zotero 阅读器打开 PDF，点击右侧栏的对话图标。
+## 配置
 
-当前默认配置：
+| 设置          | 默认值                     | 说明                                        |
+| ------------- | -------------------------- | ------------------------------------------- |
+| Base URL      | `https://api.deepseek.com` | OpenAI 兼容的 Chat Completions 端点         |
+| 模型          | `deepseek-flash`           | 支持工具调用的模型即可                      |
+| API key       | 空                         | 保存在当前 Zotero profile 中                |
+| 搜索 API key  | 空                         | 留空复用主 key；Search/Fetch 按成功请求计费 |
+| 搜索 Base URL | `https://api.deepseek.com` | 自动补 `/v1/tools/...`                      |
+| 回答语言      | 简体中文                   | 快捷提问和回答使用；不影响论文前缀          |
 
-| 设置          | 默认值                     |
-| ------------- | -------------------------- |
-| Base URL      | `https://api.deepseek.com` |
-| 模型          | `deepseek-flash`           |
-| API key       | 留空，需自行填写           |
-| 搜索 API key  | 留空，回退主 API key       |
-| 搜索 Base URL | `https://api.deepseek.com` |
-| 联网搜索      | 开启                       |
-| 论文入库      | 开启；每次写入前确认       |
-| 回答语言      | 简体中文，可修改           |
+<p align="center">
+  <img src="docs/screenshots/readme/06-settings.png" alt="ZoteroChat 设置页：Base URL、API key、模型和阅读偏好" width="720">
+</p>
 
-客户端会在 Base URL 后追加 `/chat/completions`。若端点需要 API 版本前缀，请将其包含在 Base URL 中；不要填写完整的补全请求地址。「测试连接」成功不代表流式输出、缓存统计或全部模型参数均已验证。
+## 兼容性与边界
 
-### 从源码构建
+- 开发验证在 **Zotero 9.0.6 / Gecko 140** 上完成；Zotero 7/8 是兼容目标，但还没有完整真机矩阵。
+- 端点需要支持 Chat Completions；搜索、抓取、Ask User 和论文入库还需要端点的工具调用能力。
+- 论文下载覆盖直链 PDF、arXiv 和 OpenReview；需要登录、CAPTCHA 或额外跳转的出版商页面可能失败。
+- 等待中的 Ask User 不跨面板重载恢复；已经完成的回合仍保存在历史里。
+- 笔记目前只存在当前 profile，不导出 Zotero 笔记，也不同步到其他设备。
+- 超长论文的自动压缩和上下文水位提示尚未实现；上下文窗口仍由模型决定。
 
-使用 **Node.js 24** 和 npm，在仓库根目录执行：
+## 开发
 
 ```bash
 npm ci
+npm run check          # lint + format + typecheck + tests
 npm run build:production
+npm start              # 独立的 dev Zotero 实例
 ```
 
-安装 `.scaffold/build/` 下生成的 `.xpi`。仅构建无需安装 Zotero、配置开发 profile 或提供 API key。打包检查见[发布准备](release/README.md)。
-
-## 使用
-
-1. 在侧栏输入问题，或选择一项快捷提问。
-2. 在 PDF 中划词后，选区会显示在输入框上方，并随问题发送。叉掉选区芯片可让下一次请求的新消息不再附带该段；已经发送的选区仍保留在历史中。
-3. 按 **Enter** 发送，**Shift+Enter** 换行。回答生成时可以点击停止。
-4. 点击「新对话」重置当前会话。对话会按 PDF 自动保存；导出 Zotero 笔记尚未实现。
-
-## 兼容性与限制
-
-| 范围       | 当前状态                                                                                                                                                       |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zotero     | 开发验证记录来自 Zotero 9.0.6 / Gecko 140。兼容目标为 Zotero 7–9；Zotero 7、8 尚未完成测试矩阵。                                                               |
-| 操作系统   | 跨平台验证尚未完成。反馈兼容性问题时请提供操作系统和 Zotero 版本。                                                                                             |
-| 模型端点   | DeepSeek 是已有开发记录的端点。其他 OpenAI 兼容 Chat Completions 服务和本地服务仍需验证；客户端目前统一发送 `thinking`、工具定义和流式用量参数，没有能力协商。 |
-| 搜索与工具 | DeepSeek Search / Fetch 按成功请求计费，不按 token。协议与解析有单元测试，但尚未用真实账号做回归。                                                             |
-| 论文下载   | 支持直链 PDF、arXiv abs 页和 OpenReview forum 页；需要登录或额外跳转的出版商页面可能失败。                                                                     |
-| 笔记       | 笔记只存在当前 Zotero profile 的 `zoterochat.sqlite`，不导出到 Zotero 笔记，也不同步。                                                                         |
-| 反向提问   | 等待中的问题不会跨面板重载或切换 PDF 恢复；已回答的回合仍在历史里。                                                                                            |
-| 本地服务   | 设置读取逻辑要求 API key 非空，即使本地服务本身不需要身份验证。                                                                                                |
-| 对话历史   | 按 PDF 存在当前 Zotero profile。不支持编辑已提交消息或对话分支。点「新对话」会归档旧线程。                                                                     |
-| 长文档     | 论文与对话需要容纳在模型上下文窗口内，尚未实现自动压缩和上下文上限处理。                                                                                       |
-| PDF 内容   | 使用提取后的文本，不发送页面图片。没有内置 OCR 或图像理解；文本提取可能丢失排版和公式细节。                                                                    |
-| 引用       | 全文提取不保留页码映射。请对照论文核实回答和引用。                                                                                                             |
+架构、缓存策略、Zotero 踩坑记录和 ADR 都在 [docs/](docs/) 里。开发前建议先读 [overview.md](docs/overview.md)、[architecture.md](docs/architecture.md) 和 [environment.md](docs/environment.md)。
 
 ## 数据与隐私
 
-PDF 文本在 Zotero 本地提取。发送问题时，配置的模型端点会收到提取后的论文文本、可用的文献元数据、对话历史、问题和本轮附带的选区。插件发送的是文本，而非 PDF 文件本身。
+PDF 文本在本地由 Zotero 提取。发送问题时，配置的模型端点会收到论文文本、文献元数据、对话历史、你的问题和本轮附带的选区；插件发送的是文本，不是 PDF 文件本身。
 
-API key 保存在当前 Zotero profile 的首选项中，并非加密凭据库；请求时会通过认证头发送到配置的端点。请根据文献的数据要求选择服务。数据保留政策与 API 费用由对应服务商决定，ZoteroChat 不包含托管模型订阅。
+API key 保存在当前 Zotero profile 的首选项中，并非独立加密凭据库。笔记和对话保存在当前 profile 的 `zoterochat.sqlite`。Search / Fetch 请求会发送到你配置的搜索端点，计费与数据保留政策由服务商决定。
 
-分享诊断日志前，请移除密钥、私有文献正文和可识别身份的元数据。安全问题的反馈方式见 [SECURITY.md](SECURITY.md)。
+## License
 
-## 上下文缓存
-
-ZoteroChat 保持 system 提示与论文文本块稳定，随后追加已完成的对话轮次。回答语言指令和当前选区放在新一轮消息中。工具调用及其结果也只追加，不插入冻结前缀；笔记完全不进入 prompt。这样重复上下文才有机会满足服务商的前缀缓存条件。
-
-这里有两个独立信号：`PrefixLedger` 检查本地消息前缀是否改变，服务商返回的用量字段反映实际缓存命中。前缀稳定不保证命中，也不保证特定的费用降幅。端到端缓存基准测试仍待完成，客户端尚未发送 `prompt_cache_key`。
-
-实现细节与验证计划见[上下文设计](docs/overview.md)和[前缀冻结决策](docs/adr/0003-prefix-freeze.md)。
-
-## 常见问题
-
-| 现象             | 检查方式                                                                 |
-| ---------------- | ------------------------------------------------------------------------ |
-| 侧栏提示打开 PDF | 请在 Zotero 阅读器中打开附件；文献库视图不会开始对话。                   |
-| 连接失败         | 检查 Base URL、模型、API key 和服务商错误信息。不要在 issue 中贴出密钥。 |
-| 文本提取失败     | 确认 PDF 含可选择的文本。纯图片扫描件需要先在插件外完成文本提取或 OCR。  |
-| 对话历史消失     | 确认打开的是同一 PDF 附件。只有点「新对话」才会另起空会话。              |
-| 没有缓存统计     | 端点可能没有返回流式用量或缓存字段。缺少统计不等于缓存未命中。           |
-
-其他问题请通过 [bug 反馈表单](https://github.com/TianSuya/ZoteroChat/issues/new?template=bug_report.yml)提交复现步骤和版本信息。运行环境排查记录见 [docs/environment.md](docs/environment.md)。
-
-## 开发与贡献
-
-执行 `npm ci` 后，将 `.env.example` 复制为 `.env`，填写 Zotero 可执行文件路径和**独立的开发 profile、数据目录**，再运行 `npm start`。开发时使用可丢弃的文献库。
-
-```bash
-npm run check              # Lint、格式、类型检查和单元测试
-npm run build:production   # 生产 XPI
-```
-
-贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，Zotero 配置与运行时探针见 [docs/development.md](docs/development.md)。欢迎中英文 issue 和 PR；设计文档目前以中文为主。
-
-后续工作包括长文压缩和导出 Zotero 笔记，具体进度见[路线图](docs/roadmap.md)。
-
-## 贡献者
-
-- [TianSuya](https://github.com/TianSuya)
-- [JinnWang-JY](https://github.com/JinnWang-JY)
-- [shawnliang420](https://github.com/shawnliang420)
-
-## 许可证
-
-ZoteroChat 的原创代码采用 [PolyForm Noncommercial License 1.0.0](LICENSE.md)。由于限制商业使用，项目属于 **源码可用（source-available）**，不属于 [OSI 定义的开源软件](https://opensource.org/osd)。
-
-- **非商业用途：** 允许在许可证规定的用途内使用、复制、修改和再分发，包括个人学习与非商业实验。
-- **教育与公共研究：** 许可证明确允许教育机构、公共研究机构及其 Noncommercial Organizations 条款列出的其他组织使用，不因其资金来源或相关资助义务而排除。
-- **商业用途：** 超出许可证允许用途的使用，需要向相关权利人另行取得书面授权。例如，将插件换壳销售、基于它提供收费服务或集成到商业产品中，若不属于许可证允许的用途，就需要另行授权；修改代码不会免除这一要求。
-- **再分发：** 须附带许可证全文或官方链接，并保留所有 `Required Notice:` 声明。第三方代码与素材仍适用各自的许可证，本许可证不替代其原有条款。
+[PolyForm Noncommercial 1.0.0](LICENSE.md)。商业使用需要单独的书面许可；分发时请保留许可证文本或官方链接。
 
 Required Notice: Copyright (c) 2026 bowentian
-
-商业授权咨询请[通过 GitHub issue 联系维护者](https://github.com/TianSuya/ZoteroChat/issues/new?title=Commercial%20licensing%20inquiry)。发起咨询不代表已经获得授权。以上为说明性摘要，具体权利与义务以[完整许可证英文原文](LICENSE.md)为准。

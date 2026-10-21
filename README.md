@@ -1,184 +1,154 @@
 <p align="center">
-  <img src="assets/logo-h.png" alt="ZoteroChat" width="420">
+  <img src="assets/logo-h.png" alt="ZoteroChat" width="440">
 </p>
 
-<p align="center"><strong>Ask questions about your paper, right inside Zotero.</strong></p>
+<p align="center"><strong>Read the paper. Ask it anything.</strong></p>
+<p align="center">Read · Search · Annotate · Collect</p>
 
 <p align="center">
-  English · <a href="README.zh-CN.md">简体中文</a><br>
-  <a href="#installation">Installation</a> ·
-  <a href="#interface-preview">Interface preview</a> ·
-  <a href="#compatibility-and-limitations">Compatibility</a> ·
-  <a href="docs/README.md">Documentation</a> ·
+  <a href="https://github.com/TianSuya/ZoteroChat/releases/latest">Download latest</a> ·
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="docs/">Documentation</a> ·
   <a href="docs/changelog.md">Changelog</a>
 </p>
 
-**ZoteroChat** is a PDF reading assistant in Zotero's sidebar. Ask about the paper, discuss a highlighted passage, or work through an explanation with rendered equations. The extracted paper text stays in the conversation context, with a stable prompt prefix designed to support provider-side caching.
+---
 
-> Conversations are stored in the current Zotero profile (`zoterochat.sqlite`) and restored when you reopen the same PDF. **New conversation** archives the current thread and starts a blank one.
+ZoteroChat turns Zotero's right sidebar into a reading companion. The paper you have open stays in context, so you never have to explain it again. When a sentence is unclear, ask about it, search beyond the paper, or bring a related paper into your library without leaving the reader.
 
-## Features
-
-- **Discuss the current paper.** Start with a summary, methods, limitations, or key terms, then ask follow-up questions.
-- **Search beyond the paper.** The assistant can use DeepSeek Search and Fetch in the main thread and in **Ask about selection** overlays to check related work or publication status, then cite the pages it read. Add a search key separately or reuse the main key.
-- **Save a paper to Zotero.** When you ask it to find and download a paper, the assistant proposes the item first; nothing is written until you confirm. PDFs are validated and de-duplicated by DOI.
-- **Ask about a passage.** Highlight text to attach it to your next question, or choose **Explain selection** in the reader popup. The same popup can show a translation of the selection.
-- **Write notes on a passage.** Select text in the conversation and add a private note. Notes are marked inline and stored with the conversation; they are never sent to the model.
-- **Follow up on an answer without scrolling away.** **Ask about selection** opens a short overlay on the main thread, then returns you to the same place. The assistant can also ask you a clarifying question before continuing.
-- **Read formatted answers.** Responses stream into the sidebar with Markdown and LaTeX equations.
-- **Choose your reading preferences.** Set the reply language and text size, and use `/` for quick prompts.
-- **Inspect token usage.** See input/output tokens and cache hits when the provider returns them.
-
-## Interface preview
-
-A compact sidebar, restrained controls, and readable text keep the paper and the conversation together. The screenshots below show the Chinese interface; select an image to view it at full size.
-
-### A conversation beside the paper
-
-Open the sidebar without leaving the reader. Quick prompts provide a starting point for exploring the paper.
+Conversations are saved per PDF. Close Zotero, come back tomorrow, open the same paper: the thread, tool history, and your notes are still there.
 
 <p align="center">
-  <a href="docs/screenshots/01-reader-chat.png">
-    <img src="docs/screenshots/01-reader-chat.png" alt="ZoteroChat reader sidebar with an enlarged view of the welcome screen and quick prompts" width="880">
-  </a>
+  <img src="docs/screenshots/readme/01-hero.png" alt="ZoteroChat sidebar discussing Attention Is All You Need inside the Zotero reader" width="100%">
 </p>
 
-### From a highlight to a question
+## Why it feels different
 
-The reader popup offers **Explain selection**, while a removable selection chip shows which passage will accompany the next question.
+- **The paper is the main character.** Open a PDF and the full text plus metadata are already in context. Follow-ups stay grounded, and Markdown, tables, and LaTeX render in the sidebar.
+- **Reading is not interrupted.** Explain a selection, open a side conversation, or write a note right where you are. No tab juggling between the PDF and a separate chat app.
+- **It can check, not just remember.** When outside information matters, the assistant can call DeepSeek Search / Fetch, cite the pages it read, and show a compact tool trace.
+- **Your library stays yours.** Papers are never written to Zotero without confirmation. Conversations and notes live in a local sqlite database in your profile.
+
+## Search without leaving the paper
+
+Ask about related work, publication status, or where a claim came from. The assistant searches the web, reads promising pages, and answers with links.
+
+- Search and Fetch work in the main thread and in **Ask about selection** overlays.
+- Sources are clickable Markdown links.
+- Every search and fetch appears as a compact tool record below the answer, including failures and their reasons.
 
 <p align="center">
-  <a href="docs/screenshots/02-selection.png">
-    <img src="docs/screenshots/02-selection.png" alt="Highlighted PDF passage with enlarged views of the Explain selection popup and the selection chip above the input" width="880">
-  </a>
+  <img src="docs/screenshots/readme/02-search.png" alt="ZoteroChat search results, source links, and tool trace" width="430">
 </p>
 
-### Answers with structure and equations
+<p align="center"><sub>Search, fetch, and citations stay attached to the answer.</sub></p>
 
-Headings, paragraphs, and rendered equations make detailed explanations easier to follow alongside the source paper.
+## A side conversation for one sentence
+
+Select a sentence in an assistant reply and choose **Ask about selection**. A short overlay opens on top of the main thread. Close it with **← Main thread** or Esc and you are back exactly where you left off.
+
+The side conversation reuses the same paper prefix, so it does not re-read the paper, and it does not stretch the main timeline. A small marker stays under the original sentence so you can reopen it later.
 
 <p align="center">
-  <a href="docs/screenshots/03-real-chat.png">
-    <img src="docs/screenshots/03-real-chat.png" alt="An answer about the paper's key equations, with an enlarged view of the formatted explanation and mathematical notation" width="880">
-  </a>
+  <img src="docs/screenshots/readme/05-aside.png" alt="ZoteroChat Ask about selection overlay" width="430">
 </p>
 
-## Installation
+<p align="center"><sub>The overlay covers only the sidebar; the main thread does not move.</sub></p>
 
-You need Zotero, a PDF with extractable text, and access to a model endpoint. Hosted APIs require your own API key and may charge for requests.
+## Notes on the exact sentence
 
-1. Obtain a `.xpi` from the project's [Releases page](https://github.com/TianSuya/ZoteroChat/releases), when a release is available. If the page is unavailable or has no installer, [build from source](#build-from-source).
-2. In Zotero, open **Tools → Plugins → gear → Install Plugin From File…** and select the `.xpi`.
-3. Restart Zotero, then open **Zotero → Settings → ZoteroChat** on macOS, or **Edit → Settings → ZoteroChat** on Windows/Linux. You can also use the sidebar's settings button.
-4. Enter your Base URL, API key, and model. Use **Test connection** to check the configuration.
-5. Open a PDF in Zotero's reader and select the chat icon in the right sidebar.
+Select text in the conversation and choose **Add note**. The sentence gets a warm inline highlight, distinct from the blue underline used by side conversations. Click the highlight to edit or delete the note.
 
-The current defaults are:
+- Notes are stored by message and quote, and restore when you reopen the PDF.
+- Notes are **never sent to the model** and never change the conversation prefix.
+- No separate note-taking app: read, think, annotate in place.
 
-| Setting         | Default                          |
-| --------------- | -------------------------------- |
-| Base URL        | `https://api.deepseek.com`       |
-| Model           | `deepseek-flash`                 |
-| API key         | Empty; supply your own           |
-| Search API key  | Empty; falls back to the API key |
-| Search Base URL | `https://api.deepseek.com`       |
-| Web search      | On                               |
-| Add papers      | On; confirms every write         |
-| Reply language  | Simplified Chinese; configurable |
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/screenshots/readme/03-note-highlight.png" width="400" alt="ZoteroChat inline note highlight"><br>
+      <sub>The quoted sentence is highlighted in place</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <img src="docs/screenshots/readme/04-note-editor.png" width="400" alt="ZoteroChat note editor"><br>
+      <sub>Click the highlight to edit or delete</sub>
+    </td>
+  </tr>
+</table>
 
-The client appends `/chat/completions` to the Base URL. Include any API version prefix required by your endpoint; do not enter the complete completion URL. A successful connection test does not validate streaming, cache reporting, or every model option.
+## It asks before it guesses
 
-### Build from source
+Some choices cannot be inferred from the paper. When a decision matters, the assistant shows a question card above the composer with quick options, free text, and a skip action. The answer goes back to the model as a tool result.
 
-Use **Node.js 24** and npm. From the repository root:
+## Nothing enters Zotero without confirmation
 
-```bash
-npm ci
-npm run build:production
-```
+When you explicitly ask to save a paper, the assistant proposes an item first: title, source, DOI, year, authors. Only after you confirm does it download the PDF, validate it, de-duplicate by DOI, and create the item in the current paper's library and collections.
 
-Install the `.xpi` generated under `.scaffold/build/`. Building does not require a Zotero installation, a development profile, or an API key. See [release preparation](release/README.md) for packaging checks.
+- Every library write is confirmed; nothing is added in the background.
+- Only public http(s) URLs are accepted; the downloaded file is checked for PDF magic bytes and size.
+- Direct PDF links, arXiv, and OpenReview are handled. Publisher pages that require login or CAPTCHA may fail, with the reason shown in the tool trace.
 
-## Usage
+## Close it. Come back. It is still there.
 
-1. Ask a question or select a quick prompt in the sidebar.
-2. To focus on a passage, highlight it in the PDF. The selection appears above the input and is included when you send. Remove the selection chip to omit it from the next request's new message; selections already sent remain in conversation history.
-3. Press **Enter** to send or **Shift+Enter** for a new line. Use the stop button to interrupt a response.
-4. Use **New conversation** to reset the current session. History is saved automatically per PDF; exporting answers to Zotero notes is not available yet.
+Conversations are stored per PDF in `zoterochat.sqlite` in the current Zotero profile. Messages are append-only. Reopening a paper restores:
+
+- the main thread and side conversations
+- search / fetch / paper-import tool records
+- your notes
+
+**New conversation** archives the current thread and starts a blank one; it does not delete the old records.
+
+## Install
+
+1. Download the latest `zotero-chat.xpi` from [Releases](https://github.com/TianSuya/ZoteroChat/releases/latest).
+2. In Zotero, open **Tools → Plugins → gear → Install Plugin From File…** and select the XPI.
+3. Restart Zotero and open **Zotero → Settings → ZoteroChat** (Windows/Linux: **Edit → Settings**).
+4. Enter your Base URL, API key, and model. For web search, add a search key or leave it empty to reuse the main key.
+5. Open a PDF in the reader and click the chat icon in the right sidebar.
+
+## Configuration
+
+| Setting         | Default                    | Notes                                                                      |
+| --------------- | -------------------------- | -------------------------------------------------------------------------- |
+| Base URL        | `https://api.deepseek.com` | OpenAI-compatible Chat Completions endpoint                                |
+| Model           | `deepseek-flash`           | Any model that supports tool calls                                         |
+| API key         | Empty                      | Stored in the current Zotero profile                                       |
+| Search API key  | Empty                      | Falls back to the main key; Search/Fetch are billed per successful request |
+| Search Base URL | `https://api.deepseek.com` | `/v1/tools/...` is appended automatically                                  |
+| Reply language  | Simplified Chinese         | Used by quick prompts and answers; does not change the paper prefix        |
+
+<p align="center">
+  <img src="docs/screenshots/readme/06-settings.png" alt="ZoteroChat settings: Base URL, API key, model, and reading preferences" width="720">
+</p>
 
 ## Compatibility and limitations
 
-| Area                 | Current status                                                                                                                                                                                                                                                |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zotero               | Development validation is documented on Zotero 9.0.6 / Gecko 140. Zotero 7–9 are compatibility targets; Zotero 7 and 8 have not completed a test matrix.                                                                                                      |
-| Operating systems    | Cross-platform verification is incomplete. Report the OS and Zotero version with compatibility issues.                                                                                                                                                        |
-| Model endpoints      | DeepSeek is the documented development endpoint. Other OpenAI-compatible Chat Completions services and local servers require validation. The client currently sends `thinking`, tool definitions, and streaming usage options without capability negotiation. |
-| Search and tools     | DeepSeek Search/Fetch are billed per successful request, not per token. Search/Fetch and the paper download path were verified with unit tests, not a live account.                                                                                           |
-| Paper downloads      | Direct PDF links, arXiv abstract pages, and OpenReview forum pages are supported. Publisher pages that require login or extra navigation may fail.                                                                                                            |
-| Notes                | Notes stay in the current Zotero profile's `zoterochat.sqlite`; they are not exported to Zotero notes or synced across devices.                                                                                                                               |
-| Asking the user      | A pending question is not restored if the panel reloads or you switch PDFs; answered turns remain in history.                                                                                                                                                 |
-| Local servers        | The settings loader currently requires a nonempty API key, even if the server itself does not require authentication.                                                                                                                                         |
-| Conversation history | Stored per PDF in the Zotero profile. No editing of committed messages or conversation branches. **New conversation** archives the old thread.                                                                                                                |
-| Long documents       | The paper and conversation must fit the model's context window. Automatic compression and context-limit handling are not implemented.                                                                                                                         |
-| PDF content          | Uses extracted text, not page images. No built-in OCR or visual understanding of figures. Text extraction can omit layout or mathematical detail.                                                                                                             |
-| References           | Full-text extraction does not preserve page mapping. Check claims and references against the paper.                                                                                                                                                           |
+- Development validation is on **Zotero 9.0.6 / Gecko 140**. Zotero 7 and 8 are compatibility targets, but the full matrix is not yet tested on real machines.
+- The endpoint must support Chat Completions; search, fetch, Ask User, and paper import also need tool-calling support.
+- Paper download covers direct PDF links, arXiv, and OpenReview. Publisher pages that require login, CAPTCHA, or extra navigation may fail.
+- A pending Ask User question is not restored after a panel reload; completed turns remain in history.
+- Notes currently stay in the current profile. They are not exported to Zotero notes or synced across devices.
+- Automatic compression for very long papers and context-limit warnings are not implemented yet.
+
+## Development
+
+```bash
+npm ci
+npm run check          # lint + format + typecheck + tests
+npm run build:production
+npm start              # isolated dev Zotero instance
+```
+
+Architecture, cache strategy, Zotero pitfalls, and ADRs live in [docs/](docs/). Start with [overview.md](docs/overview.md), [architecture.md](docs/architecture.md), and [environment.md](docs/environment.md).
 
 ## Data and privacy
 
-PDF text extraction happens locally in Zotero. When you send a question, the configured model endpoint receives the extracted paper text, available bibliographic metadata, conversation history, the question, and any attached selection. The plugin sends text rather than the PDF file itself.
+PDF text is extracted locally by Zotero. When you send a question, the configured model endpoint receives the paper text, bibliographic metadata, conversation history, your question, and any attached selection. The plugin sends text, not the PDF file itself.
 
-The API key is stored in the current Zotero profile's preferences, not in an encrypted credential store, and is sent in the authorization header to the configured endpoint. Choose an endpoint appropriate for the documents you read. Provider retention policies and API charges apply to requests made to that provider; ZoteroChat does not include a hosted model subscription.
-
-Before sharing diagnostic logs, remove credentials, private document text, and identifying metadata. See [security reporting](SECURITY.md).
-
-## Context caching
-
-ZoteroChat keeps the system prompt and extracted paper block stable, then appends completed turns. Reply-language instructions and the current selection are added to the new turn. Tool calls and their results are also appended, never inserted into the frozen prefix; notes are kept out of the prompt entirely. This structure is intended to make repeated context eligible for a provider's prompt cache.
-
-Two separate signals are available: `PrefixLedger` detects changes to the local message prefix, while provider usage fields report actual cache hits. A stable local prefix does not guarantee a cache hit or a particular cost reduction. End-to-end cache benchmarks are still pending, and the client does not yet send `prompt_cache_key`.
-
-See the [context design](docs/overview.md) and [prefix-freezing decision](docs/adr/0003-prefix-freeze.md) for implementation details and validation plans.
-
-## Troubleshooting
-
-| Symptom                        | What to check                                                                                                  |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Sidebar asks you to open a PDF | Open the attachment in Zotero's reader; the library view is not a chat session.                                |
-| Connection fails               | Check Base URL, model, API key, and the provider's error response. Do not post your key in an issue.           |
-| Text extraction fails          | Confirm the PDF has selectable text. Image-only scans need text extraction/OCR outside this plugin.            |
-| History disappears             | Confirm you opened the same PDF attachment. Use **New conversation** only when you want a blank thread.        |
-| No cache statistics            | The endpoint may not return streaming usage or cache fields. Missing statistics do not establish a cache miss. |
-
-For other issues, use the [bug report form](https://github.com/TianSuya/ZoteroChat/issues/new?template=bug_report.yml) with reproduction steps and version information. Runtime troubleshooting notes are in [docs/environment.md](docs/environment.md).
-
-## Development and contributing
-
-After `npm ci`, copy `.env.example` to `.env` and set the Zotero executable plus **separate development profile and data directories**. Then run `npm start`. Use a disposable library for development.
-
-```bash
-npm run check              # Lint, formatting, types, and unit tests
-npm run build:production   # Production XPI
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and [docs/development.md](docs/development.md) for Zotero setup and runtime probes. English and Chinese issues and pull requests are welcome. Most design notes are currently in Chinese.
-
-Upcoming work includes long-document compression and export to Zotero notes. Track implementation status in the [roadmap](docs/roadmap.md).
-
-## Contributors
-
-- [TianSuya](https://github.com/TianSuya)
-- [JinnWang-JY](https://github.com/JinnWang-JY)
-- [shawnliang420](https://github.com/shawnliang420)
+The API key is stored in the current Zotero profile's preferences, not in a separate encrypted credential store. Conversations and notes live in `zoterochat.sqlite` in that profile. Search and Fetch requests go to the configured search endpoint; billing and data retention are governed by that provider.
 
 ## License
 
-ZoteroChat's original code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). It is **source-available**, rather than open source under the [OSI definition](https://opensource.org/osd), because it restricts commercial use.
-
-- **Noncommercial use:** you may use, copy, modify, and redistribute the software for purposes permitted by the license, including personal study and noncommercial experimentation.
-- **Education and public research:** the license expressly permits use by educational institutions, public research organizations, and the other organizations listed in its Noncommercial Organizations section, regardless of their funding sources or related obligations.
-- **Commercial use:** uses outside the license's permitted purposes require a separate written license from the relevant rights holders. This includes selling a repackaged plugin, offering a paid service based on it, or integrating it into a commercial product when those activities are outside the permitted purposes. Making a modified version does not remove this requirement.
-- **Redistribution:** include the license text or its official URL and retain all `Required Notice:` lines. Third-party code and materials remain under their respective licenses; this license does not replace those terms.
+[PolyForm Noncommercial 1.0.0](LICENSE.md). Commercial use requires a separate written license. When redistributing, include the license text or its official URL.
 
 Required Notice: Copyright (c) 2026 bowentian
-
-For commercial licensing inquiries, [contact the maintainer through a GitHub issue](https://github.com/TianSuya/ZoteroChat/issues/new?title=Commercial%20licensing%20inquiry). Opening an inquiry does not grant permission. This summary is informational; the [full license](LICENSE.md) governs.
