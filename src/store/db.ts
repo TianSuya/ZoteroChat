@@ -305,6 +305,48 @@ export async function loadActiveConversation(
   return { id: row.id, createdAt: row.created_at };
 }
 
+export async function loadLatestConversation(
+  libraryID: number,
+  itemKey: string,
+): Promise<{ id: number; archived: boolean; createdAt: number } | null> {
+  const db = await getDB();
+  if (!db) return null;
+  const row = (await db.rowQueryAsync(
+    `SELECT id, archived, created_at FROM zc_conversations
+      WHERE library_id = ? AND item_key = ?
+      ORDER BY id DESC LIMIT 1`,
+    [libraryID, itemKey],
+  )) as { id: number; archived: number; created_at: number } | false;
+  if (!row) return null;
+  return {
+    id: row.id,
+    archived: Number(row.archived) === 1,
+    createdAt: row.created_at,
+  };
+}
+
+export async function conversationMessageCount(id: number): Promise<number> {
+  const db = await getDB();
+  if (!db) return 0;
+  const value = await db.valueQueryAsync<number>(
+    "SELECT COUNT(*) FROM zc_messages WHERE conversation_id = ?",
+    [id],
+  );
+  return typeof value === "number" ? value : 0;
+}
+
+export async function setConversationArchived(
+  id: number,
+  archived: boolean,
+): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  await db.queryAsync("UPDATE zc_conversations SET archived = ? WHERE id = ?", [
+    archived ? 1 : 0,
+    id,
+  ]);
+}
+
 export async function insertConversation(
   libraryID: number,
   itemKey: string,
@@ -318,6 +360,18 @@ export async function insertConversation(
   );
   const id = await db.valueQueryAsync<number>("SELECT last_insert_rowid()");
   return typeof id === "number" ? id : null;
+}
+
+export async function rekeyConversation(
+  id: number,
+  itemKey: string,
+): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  await db.queryAsync("UPDATE zc_conversations SET item_key = ? WHERE id = ?", [
+    itemKey,
+    id,
+  ]);
 }
 
 export async function archiveConversation(id: number): Promise<void> {

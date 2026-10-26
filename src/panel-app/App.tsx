@@ -299,42 +299,58 @@ function ChatSession({
     [],
   );
 
+  const noteMode = view.mode === "note";
+  const thread = (
+    <Thread
+      mode={view.mode}
+      noteName={view.note?.title}
+      noteChars={view.note?.charCount}
+      paperTitle={view.paper?.title || bridge.paperTitle}
+      onNewConversation={onNewConversation}
+      onOpenSettings={bridge.openPreferences}
+      selection={selection}
+      onClearSelection={() => {
+        commitSelection(null);
+        bridge.dismissSelection();
+      }}
+      usage={view.usage}
+      charCount={view.paper?.charCount}
+      prefixBreak={view.prefixBreak}
+      paperError={view.paperError}
+      paperLoading={view.paperLoading}
+      pendingPrompt={view.pendingPrompt}
+      onAnswerPrompt={view.answerPrompt}
+      onSkipPrompt={view.skipPrompt}
+    >
+      {children}
+    </Thread>
+  );
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <UiLanguageProvider language={uiLanguage}>
-        <ExplainBinder
-          bridge={bridge}
-          onSelection={commitSelection}
-          onLeaveAside={onCloseAside}
-        />
+        {noteMode ? null : (
+          <ExplainBinder
+            bridge={bridge}
+            onSelection={commitSelection}
+            onLeaveAside={onCloseAside}
+          />
+        )}
         <div className="relative h-full min-h-0">
-          <AsideActionsProvider value={asideActions}>
+          {noteMode ? (
             <div ref={mainRootRef} className="h-full min-h-0">
-              <NoteActionsProvider value={noteActions}>
-                <Thread
-                  paperTitle={view.paper?.title || bridge.paperTitle}
-                  onNewConversation={onNewConversation}
-                  onOpenSettings={bridge.openPreferences}
-                  selection={selection}
-                  onClearSelection={() => {
-                    commitSelection(null);
-                    bridge.dismissSelection();
-                  }}
-                  usage={view.usage}
-                  charCount={view.paper?.charCount}
-                  prefixBreak={view.prefixBreak}
-                  paperError={view.paperError}
-                  paperLoading={view.paperLoading}
-                  pendingPrompt={view.pendingPrompt}
-                  onAnswerPrompt={view.answerPrompt}
-                  onSkipPrompt={view.skipPrompt}
-                >
-                  {children}
-                </Thread>
-              </NoteActionsProvider>
+              {thread}
             </div>
-          </AsideActionsProvider>
-          {activeAside ? (
+          ) : (
+            <AsideActionsProvider value={asideActions}>
+              <div ref={mainRootRef} className="h-full min-h-0">
+                <NoteActionsProvider value={noteActions}>
+                  {thread}
+                </NoteActionsProvider>
+              </div>
+            </AsideActionsProvider>
+          )}
+          {!noteMode && activeAside ? (
             <AsideOverlay
               key={activeAside.id}
               bridge={bridge}
@@ -348,7 +364,7 @@ function ChatSession({
               onClose={onCloseAside}
             />
           ) : null}
-          {noteEditor ? (
+          {!noteMode && noteEditor ? (
             <NoteEditor
               request={noteEditor}
               onClose={() => setNoteEditor(null)}

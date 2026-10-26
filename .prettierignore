@@ -24,3 +24,5 @@ package-lock.json
 LICENSE.md
 # Preserve whitespace in Zotero XML templates.
 addon/content/*.xhtml
+
+videos/

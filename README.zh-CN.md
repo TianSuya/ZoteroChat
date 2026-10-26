@@ -16,7 +16,14 @@
 
 ZoteroChat 不是一个独立聊天窗口，而是 Zotero 阅读器右侧栏里的论文搭子。它把当前 PDF 的全文留在上下文里，所以你不用每次重复“这篇论文讲了什么”；读到不懂的句子，可以立刻追问、查外部资料，甚至把相关论文找回来。
 
-所有对话按 PDF 保存。关掉 Zotero，明天再打开同一篇论文，对话、工具记录和笔记都还在原处。
+论文对话按 PDF 保存，笔记对话按独立笔记保存。关掉 Zotero，明天再打开同一篇论文或笔记，对话、工具记录都还在原处。
+
+## 两种工作台
+
+- **打开 PDF**：右侧栏是论文搭子，围绕当前论文对话，支持选中翻译、副对话和原句笔记。
+- **打开独立笔记**：右侧栏变成 **Note surface**，可以检索论文、读 PDF、把选中的一批论文入库，也可以让 Agent 直接把总结写进这条笔记。它和论文对话共用同一套消息、工具记录和批量入库确认卡。
+
+Note surface 的设计与限制见 [docs/note.md](docs/note.md)。
 
 <p align="center">
   <img src="docs/screenshots/readme/01-hero.png" alt="ZoteroChat 在 Zotero 阅读器右侧栏中围绕 Attention Is All You Need 对话" width="100%">

@@ -34,7 +34,19 @@ export type BridgeAside = {
   messages: BridgeDisplayMessage[];
 };
 
+export type BridgeMode = "paper" | "note";
+
+export type BridgeNoteContext = {
+  noteID: number;
+  noteKey: string;
+  libraryID: number;
+  title: string;
+  charCount: number;
+};
+
 export type BridgeSession = BridgePaperStatus & {
+  mode: BridgeMode;
+  note: BridgeNoteContext | null;
   messages: BridgeDisplayMessage[];
   asides: BridgeAside[];
   notes: BridgeNote[];
@@ -68,16 +80,30 @@ export type BridgePaperRequest = {
   doi?: string;
   authors?: string[];
   year?: string;
+  venue?: string;
   abstract?: string;
 };
+
+export type BridgePaperBatchRequest = {
+  papers: BridgePaperRequest[];
+  note?: string;
+};
+
+export type BridgePaperBatchDecision =
+  { action: "add"; selected: BridgePaperRequest[] } | { action: "cancel" };
 
 /** What the panel is currently waiting for the user to answer. */
 export type BridgePendingPrompt =
   | ({ kind: "question" } & BridgeAskUserRequest)
-  | ({ kind: "paper" } & BridgePaperRequest);
+  | ({ kind: "paper" } & BridgePaperRequest)
+  | ({ kind: "papers" } & BridgePaperBatchRequest);
 
 export interface PanelBridge {
-  /** Attachment item backing this conversation. */
+  /** Surface this panel was mounted for. */
+  mode: BridgeMode;
+  /** Standalone-note scope when `mode === "note"`. */
+  note?: BridgeNoteContext;
+  /** Attachment item backing this conversation; noteID in note mode. */
   itemID: number;
   paperTitle: string;
   /** Build mode, so the app can gate dev-only fixtures. */
@@ -128,6 +154,10 @@ export interface PanelBridge {
       onAskUser?: (req: BridgeAskUserRequest) => Promise<string>;
       /** Model wants to write a paper to the library; resolves true to proceed. */
       onConfirmPaper?: (req: BridgePaperRequest) => Promise<boolean>;
+      /** Note surface: show a selectable candidate list and one batch confirmation. */
+      onPresentPapers?: (
+        req: BridgePaperBatchRequest,
+      ) => Promise<BridgePaperBatchDecision>;
     },
   ) => BridgeStreamJob;
   /** Snapshot main turns and start an aside that reuses the paper prefix. */

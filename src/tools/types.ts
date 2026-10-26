@@ -4,6 +4,11 @@ import type {
   ToolDefinition,
   ToolTrace,
 } from "../llm/types";
+import type {
+  BridgePaperBatchDecision,
+  BridgePaperBatchRequest,
+  BridgePaperRequest,
+} from "../panel-app/bridge";
 
 export type { ChatMessage, ToolCall, ToolDefinition, ToolTrace };
 
@@ -12,13 +17,21 @@ export type AskUserRequest = {
   options?: string[];
 };
 
-export type PaperRequest = {
-  url: string;
+export type PaperRequest = BridgePaperRequest;
+export type PaperBatchRequest = BridgePaperBatchRequest;
+export type PaperBatchDecision = BridgePaperBatchDecision;
+
+export type NoteEditRequest = {
+  mode: "append" | "replace";
+  /** Markdown section. Rendered to safe HTML before setNote. */
+  content: string;
+};
+
+export type NoteEditResult = {
+  noteID: number;
   title: string;
-  doi?: string;
-  authors?: string[];
-  year?: string;
-  abstract?: string;
+  charCount: number;
+  mode: "append" | "replace";
 };
 
 export type PaperResult =
@@ -46,6 +59,12 @@ export type ToolContext = {
   allowPaperDownloads: boolean;
   askUser: (req: AskUserRequest) => Promise<string>;
   confirmPaper: (req: PaperRequest) => Promise<boolean>;
+  /** Note surface: one selectable list + one batch confirmation. */
+  presentPapers?: (req: PaperBatchRequest) => Promise<PaperBatchDecision>;
+  /** Note surface: append or replace the current note. */
+  editNote?: (req: NoteEditRequest) => Promise<NoteEditResult>;
+  /** Live one-line progress for a long tool (batch imports). */
+  onProgress?: (detail: string) => void;
 };
 
 export type ToolExecution = {

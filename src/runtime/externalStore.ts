@@ -8,7 +8,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   BridgeAside,
+  BridgeNoteContext,
+  BridgeMode,
   BridgeNote,
+  BridgePaperBatchDecision,
+  BridgePaperBatchRequest,
   BridgePaperRequest,
   BridgePaperStatus,
   BridgePendingPrompt,
@@ -49,12 +53,14 @@ function abortError(): Error {
 }
 
 type PendingResolver = {
-  kind: "question" | "paper";
-  resolve: (value: string | boolean) => void;
+  kind: "question" | "paper" | "papers";
+  resolve: (value: string | boolean | BridgePaperBatchDecision) => void;
   reject: (err: Error) => void;
 };
 
 export type RuntimeView = {
+  mode: BridgeMode;
+  note: BridgeNoteContext | null;
   paper: BridgePaperStatus | null;
   paperError: string | null;
   paperLoading: boolean;
@@ -63,7 +69,7 @@ export type RuntimeView = {
   restoredAsides: BridgeAside[];
   notes: BridgeNote[];
   pendingPrompt: BridgePendingPrompt | null;
-  answerPrompt: (value: string | boolean) => void;
+  answerPrompt: (value: string | boolean | BridgePaperBatchDecision) => void;
   skipPrompt: () => void;
 };
 
@@ -80,6 +86,10 @@ export function useThreadRuntime(
 } {
   const [messages, setMessages] = useState<StoredMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [mode, setMode] = useState<BridgeMode>(bridge.mode);
+  const [note, setNote] = useState<BridgeNoteContext | null>(
+    bridge.note ?? null,
+  );
   const [paper, setPaper] = useState<BridgePaperStatus | null>(null);
   const [paperError, setPaperError] = useState<string | null>(null);
   const [paperLoading, setPaperLoading] = useState(true);
@@ -100,7 +110,9 @@ export function useThreadRuntime(
       .beginConversation()
       .then((status) => {
         if (cancelled) return;
-        setPaper(status);
+        setMode(status.mode);
+        setNote(status.note);
+        setPaper(status.mode === "paper" ? status : null);
         setMessages(status.messages);
         setRestoredAsides(status.asides);
         setNotes(status.notes);
@@ -118,14 +130,17 @@ export function useThreadRuntime(
     };
   }, [bridge]);
 
-  const settleAsk = useCallback((value: string | boolean | null) => {
-    const pending = promptRef.current;
-    if (!pending) return;
-    promptRef.current = null;
-    setPendingPrompt(null);
-    if (value === null) pending.reject(abortError());
-    else pending.resolve(value);
-  }, []);
+  const settleAsk = useCallback(
+    (value: string | boolean | BridgePaperBatchDecision | null) => {
+      const pending = promptRef.current;
+      if (!pending) return;
+      promptRef.current = null;
+      setPendingPrompt(null);
+      if (value === null) pending.reject(abortError());
+      else pending.resolve(value);
+    },
+    [],
+  );
 
   const askUser = useCallback(
     (req: { question: string; options?: string[] }) =>
@@ -153,15 +168,38 @@ export function useThreadRuntime(
     [],
   );
 
+  const presentPapers = useCallback(
+    (req: BridgePaperBatchRequest) =>
+      new Promise<BridgePaperBatchDecision>((resolve, reject) => {
+        promptRef.current = {
+          kind: "papers",
+          resolve: (value) => {
+            if (value && typeof value === "object" && "action" in value) {
+              resolve(value);
+            } else {
+              resolve({ action: "cancel" });
+            }
+          },
+          reject,
+        };
+        setPendingPrompt({ kind: "papers", ...req });
+      }),
+    [],
+  );
+
   const answerPrompt = useCallback(
-    (value: string | boolean) => settleAsk(value),
+    (value: string | boolean | BridgePaperBatchDecision) => settleAsk(value),
     [settleAsk],
   );
 
   const skipPrompt = useCallback(() => {
     const pending = promptRef.current;
     settleAsk(
-      pending?.kind === "paper" ? false : "The user skipped the question.",
+      pending?.kind === "paper"
+        ? false
+        : pending?.kind === "papers"
+          ? { action: "cancel" }
+          : "The user skipped the question.",
     );
   }, [settleAsk]);
 
@@ -221,6 +259,7 @@ export function useThreadRuntime(
             },
             onAskUser: askUser,
             onConfirmPaper: confirmPaper,
+            onPresentPapers: presentPapers,
           },
         );
         cancelRef.current = job.cancel;
@@ -243,7 +282,7 @@ export function useThreadRuntime(
         setIsRunning(false);
       }
     },
-    [askUser, bridge, confirmPaper, getSelection, settleAsk],
+    [askUser, bridge, confirmPaper, getSelection, presentPapers, settleAsk],
   );
 
   const onCancel = useCallback(async () => {
@@ -263,6 +302,8 @@ export function useThreadRuntime(
   return {
     runtime,
     view: {
+      mode,
+      note,
       paper,
       paperError,
       paperLoading,

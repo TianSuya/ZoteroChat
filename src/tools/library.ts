@@ -1,4 +1,11 @@
+import { extractPaper } from "../context/extract";
 import type { PaperRequest, PaperResult, ToolContext } from "./types";
+
+function asItem(
+  value: Zotero.Item | false | undefined | null,
+): Zotero.Item | undefined {
+  return value ? value : undefined;
+}
 
 const MAX_PDF_BYTES = 80 * 1024 * 1024;
 const MIN_PDF_BYTES = 1024;
@@ -237,7 +244,7 @@ async function downloadWithFetch(
   await IOUtils.write(path, bytes);
 }
 
-async function downloadPdf(
+export async function downloadPdf(
   url: string,
   fetchImpl: typeof fetch,
 ): Promise<string> {
@@ -369,4 +376,184 @@ export async function addPaperToZotero(
   } finally {
     await IOUtils.remove(path).catch(() => undefined);
   }
+}
+
+/** A compact library match used by the Note surface before it adds anything. */
+export type LibraryMatch = {
+  itemID: number;
+  title: string;
+  creators: string[];
+  year?: string;
+  doi?: string;
+  pdfItemID?: number;
+};
+
+function itemYear(item: Zotero.Item): string | undefined {
+  const raw = String(item.getField("date") ?? "").trim();
+  const match = raw.match(/(?:19|20)\d{2}/);
+  return match?.[0];
+}
+
+function creatorNames(item: Zotero.Item): string[] {
+  return item
+    .getCreators()
+    .map((creator) =>
+      [creator.firstName, creator.lastName].filter(Boolean).join(" ").trim(),
+    )
+    .filter(Boolean);
+}
+
+function pdfAttachmentFor(item: Zotero.Item): Zotero.Item | undefined {
+  if (item.isPDFAttachment?.()) return item;
+  if (!item.isRegularItem?.()) return undefined;
+  for (const id of item.getAttachments()) {
+    const attachment = asItem(Zotero.Items.get(id));
+    if (attachment?.isPDFAttachment?.()) return attachment;
+  }
+  return undefined;
+}
+
+function matchFields(item: Zotero.Item): string {
+  return [
+    item.getField("title"),
+    item.getField("abstractNote"),
+    item.getField("DOI"),
+    item.getField("date"),
+    ...creatorNames(item),
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .toLowerCase();
+}
+
+/** Rank a regular item against a free-text query. Exported for unit tests. */
+export function scoreLibraryItem(item: Zotero.Item, query: string): number {
+  const q = query.trim().toLowerCase();
+  if (!q) return 1;
+  const haystack = matchFields(item);
+  const tokens = q.split(/\s+/).filter(Boolean);
+  if (!tokens.length) return 1;
+  let score = 0;
+  for (const token of tokens) {
+    if (!haystack.includes(token)) return 0;
+    if (
+      String(item.getField("title") ?? "")
+        .toLowerCase()
+        .includes(token)
+    )
+      score += 4;
+    else if (String(item.getField("DOI") ?? "").toLowerCase() === token)
+      score += 5;
+    else score += 1;
+  }
+  if (String(item.getField("title") ?? "").toLowerCase() === q) score += 10;
+  return score;
+}
+
+/**
+ * Search the current scope (collection first, then library) without touching
+ * Zotero's saved-search state. The Note surface uses this before proposing a write.
+ */
+export async function searchLibrary(
+  ctx: ToolContext,
+  query: string,
+  limit = 12,
+): Promise<LibraryMatch[]> {
+  const cap = Math.min(20, Math.max(1, Math.round(limit)));
+  const collectionID = ctx.collectionIDs[0];
+  const collection = collectionID
+    ? Zotero.Collections.get(collectionID)
+    : undefined;
+  const items = collection
+    ? collection.getChildItems().filter((item) => item.isRegularItem?.())
+    : (await Zotero.Items.getAll(ctx.libraryID, true)).filter((item) =>
+        item.isRegularItem?.(),
+      );
+
+  return items
+    .map((item) => ({ item, score: scoreLibraryItem(item, query) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, cap)
+    .map(({ item }) => {
+      const pdf = pdfAttachmentFor(item);
+      return {
+        itemID: item.id,
+        title: String(item.getField("title") ?? "Untitled"),
+        creators: creatorNames(item).slice(0, 8),
+        year: itemYear(item),
+        doi: String(item.getField("DOI") ?? "").trim() || undefined,
+        pdfItemID: pdf?.id,
+      };
+    });
+}
+
+export type ReadPdfResult = {
+  title: string;
+  text: string;
+  charCount: number;
+  source: "library" | "url";
+};
+
+async function readPdfItem(itemID: number): Promise<ReadPdfResult> {
+  const item = asItem(await Zotero.Items.getAsync(itemID));
+  if (!item) throw new Error("Item not found.");
+  const pdf = pdfAttachmentFor(item);
+  if (!pdf) throw new Error("That item has no PDF attachment.");
+  const paper = await extractPaper(pdf.id);
+  return {
+    title: paper.title,
+    text: paper.text,
+    charCount: paper.charCount,
+    source: "library",
+  };
+}
+
+/**
+ * Read a remote PDF without keeping it. A temporary attachment is required
+ * because Zotero's PDF worker is item-backed; it is erased in `finally`.
+ */
+async function readPdfUrl(
+  ctx: ToolContext,
+  url: string,
+  title?: string,
+): Promise<ReadPdfResult> {
+  if (!isSafeHttpUrl(url)) throw new Error("Refusing a non-public URL.");
+  const path = await downloadPdf(url, ctx.fetch);
+  let temp: Zotero.Item | undefined;
+  try {
+    temp = await Zotero.Attachments.importFromFile({
+      file: path,
+      libraryID: ctx.libraryID,
+      title: title?.trim() || undefined,
+    });
+    const paper = await extractPaper(temp.id);
+    return {
+      title: paper.title,
+      text: paper.text,
+      charCount: paper.charCount,
+      source: "url",
+    };
+  } finally {
+    if (temp) {
+      try {
+        await (
+          temp as unknown as { eraseTx: () => Promise<unknown> }
+        ).eraseTx();
+      } catch (err) {
+        ztoolkit.log("temp PDF cleanup failed", String(err));
+      }
+    }
+    await IOUtils.remove(path).catch(() => undefined);
+  }
+}
+
+export async function readPdf(
+  ctx: ToolContext,
+  req: { url?: string; itemID?: number; title?: string },
+): Promise<ReadPdfResult> {
+  if (req.itemID) return readPdfItem(req.itemID);
+  const url = req.url?.trim() ?? "";
+  if (!url) throw new Error("A PDF URL or itemID is required.");
+  return readPdfUrl(ctx, url, req.title);
 }

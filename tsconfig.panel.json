@@ -28,6 +28,7 @@
     "src/llm/types.ts",
     "src/i18n/languages.ts",
     "src/i18n/commands.ts",
+    "src/i18n/note.ts",
     "src/i18n/panelCopy.ts",
     "src/i18n/directives.ts",
     "src/utils/report.ts",

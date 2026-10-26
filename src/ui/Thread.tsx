@@ -1,5 +1,10 @@
 import { AuiIf, ThreadPrimitive } from "@assistant-ui/react";
-import { ArrowDown, MessageSquarePlus, Settings } from "lucide-react";
+import {
+  ArrowDown,
+  MessageSquarePlus,
+  NotebookPen,
+  Settings,
+} from "lucide-react";
 
 import { Button } from "./components/button";
 import {
@@ -9,7 +14,11 @@ import {
   TooltipTrigger,
 } from "./components/tooltip";
 import { AssistantMessage } from "./thread/AssistantMessage";
-import type { BridgePendingPrompt, BridgeUsage } from "../panel-app/bridge";
+import type {
+  BridgePaperBatchDecision,
+  BridgePendingPrompt,
+  BridgeUsage,
+} from "../panel-app/bridge";
 import { AskUserCard } from "./thread/AskUserCard";
 import { Composer, type SelectionChip } from "./thread/Composer";
 import { CostBar } from "./thread/CostBar";
@@ -21,6 +30,9 @@ import { Welcome } from "./thread/Welcome";
 export type { SelectionChip };
 
 export interface ThreadProps {
+  mode?: "paper" | "note";
+  noteName?: string;
+  noteChars?: number;
   paperTitle: string;
   onNewConversation?: () => void;
   onOpenSettings?: () => void;
@@ -32,7 +44,7 @@ export interface ThreadProps {
   paperError?: string | null;
   paperLoading?: boolean;
   pendingPrompt?: BridgePendingPrompt | null;
-  onAnswerPrompt?: (value: string | boolean) => void;
+  onAnswerPrompt?: (value: string | boolean | BridgePaperBatchDecision) => void;
   onSkipPrompt?: () => void;
   /** Dev-only probes, rendered outside the thread chrome. */
   children?: React.ReactNode;
@@ -47,6 +59,9 @@ export interface ThreadProps {
  * supply the classes.
  */
 export function Thread({
+  mode = "paper",
+  noteName,
+  noteChars,
   paperTitle,
   onNewConversation,
   onOpenSettings,
@@ -67,15 +82,27 @@ export function Thread({
     <TooltipProvider delayDuration={200}>
       <ThreadPrimitive.Root
         data-zc-thread="main"
+        data-zc-surface={mode}
         className="group flex h-full min-h-0 flex-col bg-surface"
       >
-        <SelectionLayer />
+        {mode === "paper" ? <SelectionLayer /> : null}
         <header className="flex h-8 shrink-0 items-center gap-1 px-2">
+          {mode === "note" ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded bg-surface-subtle px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-fg-faint">
+              <NotebookPen size={11} strokeWidth={1.5} />
+              Note
+            </span>
+          ) : null}
           <span
             className="truncate text-sm font-medium text-fg-muted"
             title={paperTitle}
           >
-            {paperTitle}
+            {mode === "note" ? noteName || paperTitle : paperTitle}
+            {mode === "note" && noteChars != null ? (
+              <span className="ml-1 text-xs font-normal text-fg-faint">
+                · {noteChars.toLocaleString()}
+              </span>
+            ) : null}
           </span>
           <div className="ml-auto flex items-center gap-0.5">
             <AuiIf condition={(s) => !s.thread.isEmpty}>
@@ -113,8 +140,14 @@ export function Thread({
 
         <ThreadPrimitive.Viewport className="zc-scroll relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3">
           <AuiIf condition={(s) => s.thread.isEmpty}>
-            <div className="flex min-h-0 flex-1 flex-col justify-center">
-              <Welcome />
+            <div
+              className={
+                mode === "note"
+                  ? "flex min-h-0 flex-1 flex-col justify-start pt-4"
+                  : "flex min-h-0 flex-1 flex-col justify-center"
+              }
+            >
+              <Welcome mode={mode} />
             </div>
           </AuiIf>
           <ThreadPrimitive.Messages
@@ -135,11 +168,15 @@ export function Thread({
             onSkip={() => onSkipPrompt?.()}
           />
           <Composer
+            mode={mode}
             selection={selection}
             onClearSelection={onClearSelection}
             disabled={Boolean(pendingPrompt)}
           />
           <CostBar
+            mode={mode}
+            noteName={noteName}
+            noteChars={noteChars}
             usage={usage}
             charCount={charCount}
             prefixBreak={prefixBreak}

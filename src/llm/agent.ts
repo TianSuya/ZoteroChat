@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import type { ToolContext } from "../tools/types";
 
-const DEFAULT_MAX_ROUNDS = 6;
+const DEFAULT_MAX_ROUNDS = 48;
 
 export type AgentHandlers = {
   onDelta: (text: string) => void;
@@ -25,6 +25,8 @@ export type AgentResult = {
   newMessages: ChatMessage[];
   toolTrace: ToolTrace[];
   usage: UsageSnapshot | null;
+  /** True when the loop stopped at the safety cap, not on a final answer. */
+  exhausted?: boolean;
 };
 
 export function addUsage(a: UsageSnapshot, b: UsageSnapshot): UsageSnapshot {
@@ -114,13 +116,18 @@ export async function runAgentTurn(opts: {
     added.push(assistantMessage);
 
     for (const call of result.toolCalls) {
-      publish({
+      const runningTrace = {
         id: call.id,
         name: call.function.name,
-        status: "running",
+        status: "running" as const,
         title: call.function.name,
+      };
+      publish(runningTrace);
+      const execution = await executeTool(call, {
+        ...opts.ctx,
+        onProgress: (detail: string) =>
+          publish({ ...runningTrace, status: "running", detail }),
       });
-      const execution = await executeTool(call, opts.ctx);
       publish(execution.trace);
       const toolMessage: ChatMessage = {
         role: "tool",
@@ -132,7 +139,19 @@ export async function runAgentTurn(opts: {
     }
   }
 
-  throw new Error(
-    `The model exceeded ${maxRounds} tool rounds. Try a narrower request.`,
-  );
+  // Keep the partial transcript. A hard throw here used to discard every
+  // completed tool call, so the next user turn had no memory of what had
+  // already been searched or read. Returning a synthetic final message keeps
+  // the append-only history usable and makes the cap recoverable.
+  const note = `The model reached the ${maxRounds}-round tool limit before finishing. The work done so far is saved; ask a narrower follow-up to continue.`;
+  const finalMessage: ChatMessage = { role: "assistant", content: note };
+  added.push(finalMessage);
+  return {
+    content: content ? `${content}\n\n${note}` : note,
+    finalContent: note,
+    newMessages: added,
+    toolTrace,
+    usage,
+    exhausted: true,
+  };
 }

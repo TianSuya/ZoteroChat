@@ -113,7 +113,7 @@ describe("runAgentTurn", () => {
     expect(result.newMessages[0]?.role).toBe("assistant");
   });
 
-  it("fails after the configured tool round limit", async () => {
+  it("returns a recoverable partial transcript at the tool round limit", async () => {
     mockStream.mockResolvedValue({
       content: "",
       toolCalls: [
@@ -125,18 +125,20 @@ describe("runAgentTurn", () => {
       ],
       finishReason: "tool_calls",
     });
-    await expect(
-      runAgentTurn({
-        fetch: context().fetch,
-        baseUrl: "https://api.deepseek.com",
-        apiKey: "secret",
-        model: "deepseek-flash",
-        messages: [{ role: "user", content: "Question" }],
-        tools: [],
-        ctx: context(),
-        maxRounds: 2,
-        handlers: { onDelta: () => undefined },
-      }),
-    ).rejects.toThrow(/tool rounds/);
+    const result = await runAgentTurn({
+      fetch: context().fetch,
+      baseUrl: "https://api.deepseek.com",
+      apiKey: "secret",
+      model: "deepseek-flash",
+      messages: [{ role: "user", content: "Question" }],
+      tools: [],
+      ctx: context(),
+      maxRounds: 2,
+      handlers: { onDelta: () => undefined },
+    });
+    expect(result.exhausted).toBe(true);
+    expect(result.finalContent).toMatch(/tool limit/);
+    expect(result.newMessages.filter((m) => m.role === "tool")).toHaveLength(2);
+    expect(result.newMessages.at(-1)?.role).toBe("assistant");
   });
 });

@@ -26,4 +26,17 @@ describe("buildToolDefinitions", () => {
   it("keeps ask_user when search is disabled", () => {
     expect(names({ search: false, download: false })).toEqual(["ask_user"]);
   });
+
+  it("adds library, PDF, batch, and note editing in note mode", () => {
+    expect(names({ search: true, download: true, note: true })).toEqual([
+      "search_web",
+      "fetch_url",
+      "search_library",
+      "read_pdf",
+      "present_papers",
+      "edit_note",
+      "add_paper_to_zotero",
+      "ask_user",
+    ]);
+  });
 });

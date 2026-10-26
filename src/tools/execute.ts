@@ -1,5 +1,11 @@
 import type { ToolCall } from "../llm/types";
-import { findExistingByDoi, addPaperToZotero, isSafeHttpUrl } from "./library";
+import {
+  findExistingByDoi,
+  addPaperToZotero,
+  isSafeHttpUrl,
+  readPdf,
+  searchLibrary,
+} from "./library";
 import { fetchPage, searchWeb } from "./search";
 import type {
   AskUserRequest,
@@ -37,6 +43,42 @@ function stringArrayArg(args: Record<string, unknown>, key: string): string[] {
     .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function paperArrayArg(args: Record<string, unknown>): PaperRequest[] {
+  const raw = args.papers;
+  if (!Array.isArray(raw)) return [];
+  const out: PaperRequest[] = [];
+  for (const value of raw.slice(0, 20)) {
+    if (!value || typeof value !== "object") continue;
+    const row = value as Record<string, unknown>;
+    const url = typeof row.url === "string" ? row.url.trim() : "";
+    const title = typeof row.title === "string" ? row.title.trim() : "";
+    if (!url || !title) continue;
+    out.push({
+      url,
+      title,
+      doi:
+        typeof row.doi === "string" ? row.doi.trim() || undefined : undefined,
+      authors: Array.isArray(row.authors)
+        ? row.authors
+            .filter((x): x is string => typeof x === "string")
+            .map((x) => x.trim())
+            .filter(Boolean)
+        : undefined,
+      year:
+        typeof row.year === "string" ? row.year.trim() || undefined : undefined,
+      venue:
+        typeof row.venue === "string"
+          ? row.venue.trim() || undefined
+          : undefined,
+      abstract:
+        typeof row.abstract === "string"
+          ? row.abstract.trim() || undefined
+          : undefined,
+    });
+  }
+  return out;
 }
 
 function numberArg(
@@ -149,6 +191,153 @@ export async function executeTool(
             status: "ok",
             title: page.title || label,
             detail: `${page.content.length.toLocaleString()} chars`,
+          },
+        };
+      }
+
+      case "search_library": {
+        const query = stringArg(args, "query");
+        if (!query) throw new Error("Library query is required.");
+        traceBase.title = query;
+        const results = await searchLibrary(
+          ctx,
+          query,
+          numberArg(args, "limit"),
+        );
+        return {
+          content: clip(
+            `<library-results query="${query.replace(/"/g, '\\"')}">\n${escapeForDataBlock(
+              JSON.stringify(results, null, 2),
+            )}\n</library-results>`,
+            MAX_TOOL_RESULT_CHARS,
+          ),
+          trace: {
+            ...traceBase,
+            status: "ok",
+            title: query,
+            detail: `${results.length} match${results.length === 1 ? "" : "es"}`,
+          },
+        };
+      }
+
+      case "read_pdf": {
+        const url = stringArg(args, "url");
+        const itemID = numberArg(args, "itemID");
+        if (!url && !itemID)
+          throw new Error("A PDF URL or itemID is required.");
+        traceBase.title = url || `item ${itemID}`;
+        const result = await readPdf(ctx, {
+          url: url || undefined,
+          itemID,
+          title: stringArg(args, "title") || undefined,
+        });
+        return {
+          content: clip(
+            `<pdf-text source="${result.source}" title="${result.title.replace(/"/g, '\\"')}" chars="${result.charCount}">\n${escapeForDataBlock(
+              result.text,
+            )}\n</pdf-text>`,
+            MAX_TOOL_RESULT_CHARS,
+          ),
+          trace: {
+            ...traceBase,
+            status: "ok",
+            title: result.title,
+            detail: `${result.charCount.toLocaleString()} chars`,
+          },
+        };
+      }
+
+      case "present_papers": {
+        if (!ctx.allowPaperDownloads) {
+          throw new Error("Adding papers to Zotero is disabled in settings.");
+        }
+        if (!ctx.presentPapers) {
+          throw new Error("This panel cannot present a candidate list.");
+        }
+        const papers = paperArrayArg(args);
+        if (!papers.length) throw new Error("No valid candidate papers.");
+        traceBase.title = `${papers.length} candidate${
+          papers.length === 1 ? "" : "s"
+        }`;
+        const note = stringArg(args, "note") || undefined;
+        const decision = await ctx.presentPapers({ papers, note });
+        if (decision.action === "cancel") {
+          return {
+            content: JSON.stringify({
+              status: "cancelled",
+              note: "The user closed the candidate list without adding anything.",
+            }),
+            trace: {
+              ...traceBase,
+              status: "ok",
+              title: traceBase.title,
+              detail: "Cancelled",
+            },
+          };
+        }
+
+        const selected = decision.selected.slice(0, 20);
+        const results: Array<Record<string, unknown>> = [];
+        for (let i = 0; i < selected.length; i += 1) {
+          const paper = selected[i]!;
+          ctx.onProgress?.(
+            `Adding ${i + 1}/${selected.length}: ${paper.title}`,
+          );
+          try {
+            const result = await addPaperToZotero(paper, ctx);
+            results.push({ ...result, title: paper.title });
+            ctx.onProgress?.(
+              `Added ${i + 1}/${selected.length}: ${paper.title}`,
+            );
+          } catch (err) {
+            results.push({
+              status: "error",
+              title: paper.title,
+              message: String((err as Error)?.message ?? err),
+            });
+            ctx.onProgress?.(
+              `Failed ${i + 1}/${selected.length}: ${paper.title}`,
+            );
+          }
+        }
+        const added = results.filter((r) => r.status === "added").length;
+        const duplicates = results.filter(
+          (r) => r.status === "duplicate",
+        ).length;
+        const failed = results.length - added - duplicates;
+        return {
+          content: JSON.stringify({
+            status: added ? "added" : "no-write",
+            requested: selected.length,
+            added,
+            duplicates,
+            failed,
+            results,
+          }),
+          trace: {
+            ...traceBase,
+            status:
+              failed === results.length && results.length > 0 ? "error" : "ok",
+            title: traceBase.title,
+            detail: `${added} added · ${duplicates} duplicate · ${failed} failed`,
+          },
+        };
+      }
+
+      case "edit_note": {
+        const content = stringArg(args, "content");
+        if (!content) throw new Error("Note content is required.");
+        if (!ctx.editNote) throw new Error("Note editing is unavailable.");
+        const mode =
+          stringArg(args, "mode") === "replace" ? "replace" : "append";
+        const result = await ctx.editNote({ mode, content });
+        return {
+          content: `<note-edited mode="${result.mode}" title="${result.title.replace(/"/g, '\\"')}" chars="${result.charCount}" />`,
+          trace: {
+            ...traceBase,
+            status: "ok",
+            title: result.title,
+            detail: `${result.mode} · ${result.charCount.toLocaleString()} chars`,
           },
         };
       }

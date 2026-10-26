@@ -14,6 +14,7 @@ export default defineConfig(
       "fixtures/**",
       ".claude/**",
       ".grok/**",
+      "videos/**",
     ],
   },
   {

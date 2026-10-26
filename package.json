@@ -1,7 +1,7 @@
 {
   "name": "zoterochat",
-  "version": "0.2.1",
-  "description": "Zotero 侧栏论文阅读助手：以打开的 PDF 为会话边界，前缀冻结换取高缓存命中率",
+  "version": "0.2.2",
+  "description": "Zotero 侧栏论文阅读与独立笔记研究助手：论文对话，笔记内检索、批量入库与写作",
   "author": "bowentian",
   "license": "PolyForm-Noncommercial-1.0.0",
   "homepage": "https://github.com/TianSuya/ZoteroChat",

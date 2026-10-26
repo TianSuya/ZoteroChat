@@ -110,9 +110,44 @@ describe("executeTool", () => {
     expect(confirmPaper).not.toHaveBeenCalled();
   });
 
+  it("writes an edit_note request through the note context", async () => {
+    const editNote = vi.fn(async () => ({
+      noteID: 24,
+      title: "Note Agent Test",
+      charCount: 321,
+      mode: "append" as const,
+    }));
+    const result = await executeTool(
+      call("edit_note", { mode: "append", content: "## Summary" }),
+      context({ editNote }),
+    );
+    expect(editNote).toHaveBeenCalledWith({
+      mode: "append",
+      content: "## Summary",
+    });
+    expect(result.content).toContain("<note-edited");
+    expect(result.trace.status).toBe("ok");
+  });
+
   it("surfaces an unknown tool as an error", async () => {
     const result = await executeTool(call("nope", {}), context());
     expect(result.content).toContain("Unknown tool");
     expect(result.trace.status).toBe("error");
   });
+});
+
+it("cancels a candidate list without writing anything", async () => {
+  const presentPapers = vi.fn(async () => ({ action: "cancel" as const }));
+  const result = await executeTool(
+    call("present_papers", {
+      papers: [
+        { url: "https://example.com/a.pdf", title: "A" },
+        { url: "https://example.com/b.pdf", title: "B" },
+      ],
+    }),
+    context({ presentPapers }),
+  );
+  expect(presentPapers).toHaveBeenCalledTimes(1);
+  expect(result.content).toContain("cancelled");
+  expect(result.trace.detail).toBe("Cancelled");
 });

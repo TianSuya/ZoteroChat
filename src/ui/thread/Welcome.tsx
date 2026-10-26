@@ -1,20 +1,34 @@
 import { ThreadPrimitive } from "@assistant-ui/react";
-import { Sparkles } from "lucide-react";
+import { NotebookPen, Sparkles } from "lucide-react";
 
 import { commandsFor } from "../../i18n/commands";
+import { noteCommands, noteCopy } from "../../i18n/note";
 import { usePanelCopy, useUiLanguage } from "../ReplyLanguage";
 
-export function Welcome() {
+export function Welcome({ mode = "paper" }: { mode?: "paper" | "note" }) {
   const lang = useUiLanguage();
   const copy = usePanelCopy();
-  const commands = commandsFor(lang);
+  const commands = mode === "note" ? noteCommands(lang) : commandsFor(lang);
+  const note = mode === "note" ? noteCopy(lang) : null;
   return (
     <div className="flex flex-col gap-3 py-6">
-      <Sparkles size={16} strokeWidth={1.5} className="text-fg-faint" />
+      {note ? (
+        <NotebookPen size={16} strokeWidth={1.5} className="text-fg-faint" />
+      ) : (
+        <Sparkles size={16} strokeWidth={1.5} className="text-fg-faint" />
+      )}
       <div className="flex flex-col gap-1">
-        <p className="text-base text-fg-muted">{copy.welcomeTitle}</p>
-        <p className="text-sm leading-relaxed text-fg-faint">
-          {copy.welcomeHint}
+        <p className={note ? "text-base text-fg" : "text-base text-fg-muted"}>
+          {note ? note.title : copy.welcomeTitle}
+        </p>
+        <p
+          className={
+            note
+              ? "text-sm leading-relaxed text-fg-muted"
+              : "text-sm leading-relaxed text-fg-faint"
+          }
+        >
+          {note ? note.hint : copy.welcomeHint}
         </p>
       </div>
       <div className="flex flex-col items-stretch gap-1">

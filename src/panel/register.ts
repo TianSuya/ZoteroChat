@@ -16,6 +16,12 @@ import {
   streamTurn,
   updateNote,
 } from "../llm/session";
+import type { BridgeNoteContext, BridgeSession } from "../panel-app/bridge";
+import {
+  beginNoteConversation,
+  resetNoteConversation,
+  streamNoteTurn,
+} from "../llm/note";
 import { openPreferences } from "../prefs/register";
 import {
   dismissSelection,
@@ -87,10 +93,13 @@ function ensureFTL(doc: Document) {
  * body per item pane instance, so one frame per body is the natural grain —
  * anything worth surviving a reload belongs in the store, not in the DOM.
  */
-const frames = new WeakMap<
-  HTMLElement,
-  { frame: PanelFrame; itemID: number }
->();
+const frames = new WeakMap<HTMLElement, { frame: PanelFrame; key: string }>();
+
+function paperSession(
+  session: Awaited<ReturnType<typeof beginConversation>>,
+): BridgeSession {
+  return { ...session, mode: "paper", note: null };
+}
 
 export function registerPanelSection() {
   const sectionID = Zotero.ItemPaneManager.registerSection({
@@ -129,31 +138,21 @@ export function registerPanelSection() {
       if (!doc) return;
 
       const pdf = tabType === "reader" ? getPdfItem(item) : undefined;
-      if (!pdf) {
+      const noteItem =
+        !pdf && tabType === "note" && item?.isNote?.() ? item : undefined;
+      if (!pdf && !noteItem) {
         frames.get(el)?.frame.destroy();
         frames.delete(el);
         renderEmpty(el);
         return;
       }
 
+      const key = pdf ? `paper:${pdf.id}` : `note:${noteItem!.id}`;
       const existing = frames.get(el);
-      if (existing?.itemID === pdf.id) return;
+      if (existing?.key === key) return;
       existing?.frame.destroy();
 
-      const itemID = pdf.id;
-      const parentRaw = pdf.parentID
-        ? Zotero.Items.get(pdf.parentID)
-        : undefined;
-      const parent = parentRaw ? parentRaw : undefined;
-      const paperTitle =
-        (parent?.getField("title") as string | undefined) ||
-        (pdf.getField("title") as string | undefined) ||
-        pdf.attachmentFilename ||
-        String(itemID);
-
-      const frame = createPanelFrame(doc, {
-        itemID,
-        paperTitle,
+      const common = {
         env: __env__,
         showProbe: Boolean(
           Zotero.Prefs.get(`${config.prefsPrefix}.devShowRadixProbe`, true),
@@ -161,34 +160,100 @@ export function registerPanelSection() {
         showAssistantProbe: Boolean(
           Zotero.Prefs.get(`${config.prefsPrefix}.devShowAssistantProbe`, true),
         ),
-        beginConversation: () => beginConversation(itemID),
-        resetConversation: () => resetConversation(itemID),
         openPreferences,
         getUiLanguage: readUiLanguage,
         onUiLanguageChange,
         getFontSize: readFontSize,
         onFontSizeChange,
         onPrefsApplied,
-        getSelection: () => getSelection(itemID),
-        dismissSelection: () => dismissSelection(itemID),
-        onSelectionChange: (listener) =>
-          onSelectionChange((sel, id) => {
-            if (id === itemID) listener(sel);
-          }),
-        onExplainRequest: (listener) =>
-          onExplainRequest((sel, id) => {
-            if (id === itemID) listener(sel);
-          }),
-        streamTurn: (req, handlers) => streamTurn(itemID, req, handlers),
-        beginAside: (req) => beginAside(itemID, req),
-        streamAsideTurn: (req, handlers) =>
-          streamAsideTurn(itemID, req.asideId, req, handlers),
-        saveNote: (req) => saveNote(itemID, req),
-        updateNote: (req) => updateNote(itemID, req),
-        deleteNote: (id) => deleteNote(itemID, id),
-      });
+      };
 
-      frames.set(el, { frame, itemID });
+      let bridge: Parameters<typeof createPanelFrame>[1];
+      if (pdf) {
+        const itemID = pdf.id;
+        const parentRaw = pdf.parentID
+          ? Zotero.Items.get(pdf.parentID)
+          : undefined;
+        const parent = parentRaw ? parentRaw : undefined;
+        const paperTitle =
+          (parent?.getField("title") as string | undefined) ||
+          (pdf.getField("title") as string | undefined) ||
+          pdf.attachmentFilename ||
+          String(itemID);
+        bridge = {
+          ...common,
+          mode: "paper",
+          note: undefined,
+          itemID,
+          paperTitle,
+          beginConversation: async () =>
+            paperSession(await beginConversation(itemID)),
+          resetConversation: async () =>
+            paperSession(await resetConversation(itemID)),
+          getSelection: () => getSelection(itemID),
+          dismissSelection: () => dismissSelection(itemID),
+          onSelectionChange: (listener) =>
+            onSelectionChange((sel, id) => {
+              if (id === itemID) listener(sel);
+            }),
+          onExplainRequest: (listener) =>
+            onExplainRequest((sel, id) => {
+              if (id === itemID) listener(sel);
+            }),
+          streamTurn: (req, handlers) => streamTurn(itemID, req, handlers),
+          beginAside: (req) => beginAside(itemID, req),
+          streamAsideTurn: (req, handlers) =>
+            streamAsideTurn(itemID, req.asideId, req, handlers),
+          saveNote: (req) => saveNote(itemID, req),
+          updateNote: (req) => updateNote(itemID, req),
+          deleteNote: (id) => deleteNote(itemID, id),
+        };
+      } else {
+        const note = noteItem!;
+        const noteTitle = note.getNoteTitle() || "Untitled note";
+        const noteChars = note
+          .getNote()
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim().length;
+        const noteContext: BridgeNoteContext = {
+          noteID: note.id,
+          noteKey: note.key,
+          libraryID: note.libraryID,
+          title: noteTitle,
+          charCount: noteChars,
+        };
+        bridge = {
+          ...common,
+          mode: "note",
+          note: noteContext,
+          itemID: note.id,
+          paperTitle: noteTitle,
+          beginConversation: () => beginNoteConversation(note.id),
+          resetConversation: () => resetNoteConversation(note.id),
+          getSelection: () => null,
+          dismissSelection: () => undefined,
+          streamTurn: (req, handlers) => streamNoteTurn(note.id, req, handlers),
+          beginAside: () => {
+            throw new Error("Asides are only available in paper mode.");
+          },
+          streamAsideTurn: () => {
+            throw new Error("Asides are only available in paper mode.");
+          },
+          saveNote: async () => {
+            throw new Error("Paper notes are only available in paper mode.");
+          },
+          updateNote: async () => {
+            throw new Error("Paper notes are only available in paper mode.");
+          },
+          deleteNote: async () => {
+            throw new Error("Paper notes are only available in paper mode.");
+          },
+        };
+      }
+
+      const frame = createPanelFrame(doc, bridge);
+      frames.set(el, { frame, key });
       el.replaceChildren(frame.element);
       frame.attached();
     },

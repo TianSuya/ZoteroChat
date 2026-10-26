@@ -2,7 +2,10 @@ import {
   BookPlus,
   CircleCheck,
   CircleX,
+  FilePenLine,
+  FileText,
   Globe,
+  Library,
   Loader2,
   MessageCircleQuestion,
   Search,
@@ -19,6 +22,12 @@ function iconFor(name: string) {
       return Globe;
     case "add_paper_to_zotero":
       return BookPlus;
+    case "search_library":
+      return Library;
+    case "read_pdf":
+      return FileText;
+    case "edit_note":
+      return FilePenLine;
     case "ask_user":
       return MessageCircleQuestion;
     default:
@@ -34,6 +43,12 @@ function labelFor(name: string, copy: ReturnType<typeof usePanelCopy>): string {
       return copy.toolFetch;
     case "add_paper_to_zotero":
       return copy.toolAddPaper;
+    case "search_library":
+      return copy.toolLibrary ?? "Library";
+    case "read_pdf":
+      return copy.toolReadPdf ?? "Read PDF";
+    case "edit_note":
+      return copy.toolEditNote ?? "Edit note";
     case "ask_user":
       return copy.toolAskUser;
     default:

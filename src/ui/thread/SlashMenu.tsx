@@ -1,6 +1,7 @@
 import { useAui, useAuiState } from "@assistant-ui/react";
 
-import { matchingCommands, slashQuery } from "../../i18n/commands";
+import { matchingCommands } from "../../i18n/commands";
+import { matchingNoteCommands, slashQuery } from "../../i18n/note";
 import {
   Command,
   CommandEmpty,
@@ -9,7 +10,7 @@ import {
 } from "../components/command";
 import { usePanelCopy, useUiLanguage } from "../ReplyLanguage";
 
-export function SlashMenu() {
+export function SlashMenu({ mode = "paper" }: { mode?: "paper" | "note" }) {
   const aui = useAui();
   const lang = useUiLanguage();
   const copy = usePanelCopy();
@@ -17,7 +18,10 @@ export function SlashMenu() {
   const query = slashQuery(text);
   if (query === null) return null;
 
-  const items = matchingCommands(query, lang);
+  const items =
+    mode === "note"
+      ? matchingNoteCommands(query, lang)
+      : matchingCommands(query, lang);
   return (
     <div className="absolute inset-x-0 bottom-full z-20 mb-1 overflow-hidden rounded-md border border-border bg-surface-raised">
       <Command

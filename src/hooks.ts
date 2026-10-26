@@ -27,7 +27,7 @@ async function onStartup() {
 }
 
 async function onMainWindowLoad(_win: Window) {
-  // The item pane section re-renders per window on its own; nothing to do yet.
+  // The item pane section owns its frame lifecycle.
 }
 
 async function onMainWindowUnload(_win: Window) {

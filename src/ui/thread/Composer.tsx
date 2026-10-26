@@ -3,7 +3,8 @@ import { ArrowUp, Square, X } from "lucide-react";
 
 import { Button } from "../components/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/tooltip";
-import { usePanelCopy } from "../ReplyLanguage";
+import { noteCopy } from "../../i18n/note";
+import { usePanelCopy, useUiLanguage } from "../ReplyLanguage";
 import { SlashMenu } from "./SlashMenu";
 
 export type SelectionChip = {
@@ -59,19 +60,24 @@ export function Composer({
   onClearSelection,
   placeholder,
   disabled = false,
+  mode = "paper",
 }: {
   selection?: SelectionChip | null;
   onClearSelection?: () => void;
   placeholder?: string;
   disabled?: boolean;
+  mode?: "paper" | "note";
 }) {
   const copy = usePanelCopy();
+  const lang = useUiLanguage();
+  const notePlaceholder =
+    mode === "note" ? noteCopy(lang).placeholder : undefined;
   return (
     <ComposerPrimitive.Root
       compact
       className="relative rounded-md bg-surface-subtle px-2 py-1.5"
     >
-      {disabled ? null : <SlashMenu />}
+      {disabled ? null : <SlashMenu mode={mode} />}
       {selection ? (
         <SelectionBanner
           selection={selection}
@@ -92,6 +98,7 @@ export function Composer({
             disabled
               ? copy.composerAsking
               : (placeholder ??
+                notePlaceholder ??
                 (selection
                   ? copy.composerPlaceholderSelection
                   : copy.composerPlaceholder))

@@ -37,9 +37,14 @@ export type PanelCopy = {
   paperConfirmBody: string;
   paperConfirmAdd: string;
   paperConfirmCancel: string;
+  paperBatchLabel?: string;
+  paperBatchAdd?: string;
   toolSearch: string;
   toolFetch: string;
   toolAddPaper: string;
+  toolLibrary?: string;
+  toolReadPdf?: string;
+  toolEditNote?: string;
   toolAskUser: string;
   toolRunning: string;
   toolDone: string;
@@ -93,9 +98,14 @@ const COPY: Record<UiLanguage, PanelCopy> = {
     paperConfirmBody: "将下载这篇论文，并在当前文库创建条目。",
     paperConfirmAdd: "下载并加入",
     paperConfirmCancel: "取消",
+    paperBatchLabel: "选择要加入的论文",
+    paperBatchAdd: "加入选中论文",
     toolSearch: "搜索",
     toolFetch: "阅读",
     toolAddPaper: "入库",
+    toolLibrary: "文库",
+    toolReadPdf: "读 PDF",
+    toolEditNote: "写笔记",
     toolAskUser: "提问",
     toolRunning: "进行中",
     toolDone: "完成",
@@ -202,9 +212,14 @@ const COPY: Record<UiLanguage, PanelCopy> = {
       "This will download the paper and create an item in the current library.",
     paperConfirmAdd: "Download and add",
     paperConfirmCancel: "Cancel",
+    paperBatchLabel: "Select papers",
+    paperBatchAdd: "Add selected",
     toolSearch: "Search",
     toolFetch: "Read",
     toolAddPaper: "Add paper",
+    toolLibrary: "Library",
+    toolReadPdf: "Read PDF",
+    toolEditNote: "Edit note",
     toolAskUser: "Question",
     toolRunning: "Running",
     toolDone: "Done",
